@@ -1,0 +1,21 @@
+{
+  "name": "Pouch of Essentials",
+  "short_name": "Pouch",
+  "description": "Shared family grocery list — works offline, syncs via GitHub.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5efe6",
+  "theme_color": "#c2410c",
+  "lang": "en",
+  "dir": "auto",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
