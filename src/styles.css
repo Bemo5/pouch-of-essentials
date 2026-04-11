@@ -121,7 +121,7 @@ body,
 }
 
 html {
-  font-size: 16px;
+  font-size: 18px;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -607,8 +607,8 @@ a:hover {
 /* Checkbox */
 
 .check {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 2px solid var(--line-2);
   background: var(--bg);
@@ -617,11 +617,13 @@ a:hover {
   flex-shrink: 0;
   transition: all 0.25s var(--ease-spring);
   position: relative;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .check svg {
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   stroke: #fff;
   stroke-width: 3.5;
   stroke-linecap: round;
@@ -701,25 +703,32 @@ a:hover {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
-  opacity: 0.6;
+  opacity: 1;
   transition: opacity 0.2s;
 }
 
-.item:hover .row-actions,
-.item:focus-within .row-actions {
-  opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+  .row-actions {
+    opacity: 0.6;
+  }
+  .item:hover .row-actions,
+  .item:focus-within .row-actions {
+    opacity: 1;
+  }
 }
 
 .icon-btn {
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--r-sm);
   display: grid;
   place-items: center;
   color: var(--ink-3);
   transition: all 0.15s;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .icon-btn:hover {
