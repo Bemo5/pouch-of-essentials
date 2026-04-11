@@ -3,6 +3,7 @@ import GroceryList from './components/GroceryList.jsx';
 import HistoryView from './components/HistoryView.jsx';
 import SyncStatus from './components/SyncStatus.jsx';
 import Settings, { readSetupFromHash } from './components/Settings.jsx';
+import Toast from './components/Toast.jsx';
 import { useGroceryStore } from './hooks/useGroceryStore.js';
 import { useSync } from './hooks/useSync.js';
 import { useProfile } from './hooks/useProfile.js';
@@ -16,6 +17,9 @@ export default function App() {
   const [showInstall, setShowInstall] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [toast, setToast] = useState(null);
+  // Showing a new toast replaces any in-flight one.
+  const showToast = (t) => setToast(t);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 4);
@@ -90,9 +94,9 @@ export default function App() {
 
       <main className="app-main">
         {tab === 'list' ? (
-          <GroceryList store={store} />
+          <GroceryList store={store} showToast={showToast} />
         ) : (
-          <HistoryView store={store} />
+          <HistoryView store={store} showToast={showToast} />
         )}
       </main>
 
@@ -145,6 +149,8 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
 
       <Settings
         sync={sync}

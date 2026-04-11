@@ -1,5 +1,4 @@
-import { useMemo, useState } from 'react';
-import Confirm from './Confirm.jsx';
+import { useState } from 'react';
 import { formatPriceUnit } from '../utils/stores.js';
 
 function formatPrice(n) {
@@ -18,15 +17,17 @@ function formatDate(ts) {
   });
 }
 
-export default function HistoryView({ store }) {
-  const { history, deleteHistoryEntry } = store;
+export default function HistoryView({ store, showToast }) {
+  const { history, deleteHistoryEntry, restoreHistoryEntry } = store;
   const [openId, setOpenId] = useState(null);
-  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
-  const pendingEntry = useMemo(
-    () => history.find((h) => h.id === pendingDeleteId) || null,
-    [history, pendingDeleteId]
-  );
+  const handleDelete = async (entry) => {
+    await deleteHistoryEntry(entry.id);
+    showToast?.({
+      message: `Deleted list from ${formatDate(entry.archivedAt)}`,
+      onUndo: () => restoreHistoryEntry(entry.id)
+    });
+  };
 
   if (history.length === 0) {
     return (
@@ -125,7 +126,7 @@ export default function HistoryView({ store }) {
                   <div className="history-actions">
                     <button
                       className="btn btn-ghost btn-small"
-                      onClick={() => setPendingDeleteId(entry.id)}
+                      onClick={() => handleDelete(entry)}
                     >
                       Delete
                     </button>
@@ -136,24 +137,6 @@ export default function HistoryView({ store }) {
           );
         })}
       </ul>
-      <Confirm
-        open={!!pendingEntry}
-        title="Delete this entry?"
-        message={
-          pendingEntry
-            ? `${pendingEntry.items.length} item${
-                pendingEntry.items.length === 1 ? '' : 's'
-              } from ${formatDate(pendingEntry.archivedAt)}`
-            : ''
-        }
-        confirmLabel="Delete"
-        danger
-        onConfirm={() => {
-          deleteHistoryEntry(pendingDeleteId);
-          setPendingDeleteId(null);
-        }}
-        onCancel={() => setPendingDeleteId(null)}
-      />
     </div>
   );
 }

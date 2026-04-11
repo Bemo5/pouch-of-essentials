@@ -186,6 +186,7 @@ export function useGroceryStore(sync, profile) {
         }
         await refresh();
         markDirty();
+        return { autoArchivedId: entry.id };
       } finally {
         autoArchiveInFlightRef.current = false;
       }
@@ -220,12 +221,26 @@ export function useGroceryStore(sync, profile) {
     [refresh, markDirty]
   );
 
+  // Un-tombstone an item. Bumps updatedAt so the restore wins LWW over peers
+  // that still hold the tombstone.
+  const restoreItem = useCallback(
+    async (id) => {
+      const db = await getDB();
+      const cur = await db.get(STORE_ITEMS, id);
+      if (!cur) return;
+      await db.put(STORE_ITEMS, { ...cur, deleted: false, updatedAt: Date.now() });
+      await refresh();
+      markDirty();
+    },
+    [refresh, markDirty]
+  );
+
   const archiveCurrentList = useCallback(
     async () => {
       const db = await getDB();
       const all = await db.getAll(STORE_ITEMS);
       const live = all.filter((i) => !i.deleted);
-      if (live.length === 0) return;
+      if (live.length === 0) return null;
       const now = Date.now();
       const entry = {
         id: newId(),
@@ -238,6 +253,31 @@ export function useGroceryStore(sync, profile) {
       for (const i of live) {
         await db.put(STORE_ITEMS, { ...i, deleted: true, updatedAt: now });
       }
+      await refresh();
+      markDirty();
+      return entry.id;
+    },
+    [refresh, markDirty]
+  );
+
+  // Undo an archive: remove the history entry and un-tombstone every item it
+  // contained. Works for both manual and auto archives.
+  const undoArchive = useCallback(
+    async (historyId) => {
+      const db = await getDB();
+      const entry = await db.get(STORE_HISTORY, historyId);
+      if (!entry) return;
+      const now = Date.now();
+      // Soft-delete the history entry so the removal propagates via LWW.
+      await db.put(STORE_HISTORY, { ...entry, deleted: true, updatedAt: now });
+      for (const i of entry.items || []) {
+        const cur = await db.get(STORE_ITEMS, i.id);
+        if (!cur) continue;
+        await db.put(STORE_ITEMS, { ...cur, deleted: false, updatedAt: now });
+      }
+      // Clear the auto-archive signature so the next completion can archive
+      // again without being blocked by the dedupe guard.
+      autoArchiveLastRef.current = null;
       await refresh();
       markDirty();
     },
@@ -262,6 +302,22 @@ export function useGroceryStore(sync, profile) {
     [refresh, markDirty]
   );
 
+  const restoreHistoryEntry = useCallback(
+    async (id) => {
+      const db = await getDB();
+      const cur = await db.get(STORE_HISTORY, id);
+      if (!cur) return;
+      await db.put(STORE_HISTORY, {
+        ...cur,
+        deleted: false,
+        updatedAt: Date.now()
+      });
+      await refresh();
+      markDirty();
+    },
+    [refresh, markDirty]
+  );
+
   return {
     ready,
     items,
@@ -271,8 +327,11 @@ export function useGroceryStore(sync, profile) {
     toggleDone,
     cycleUrgency,
     deleteItem,
+    restoreItem,
     archiveCurrentList,
+    undoArchive,
     deleteHistoryEntry,
+    restoreHistoryEntry,
     refresh
   };
 }

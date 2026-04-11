@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import AddItemForm from './AddItemForm.jsx';
 import ItemRow from './ItemRow.jsx';
-import Confirm from './Confirm.jsx';
 import LogPurchaseDialog from './LogPurchaseDialog.jsx';
 
 function EmptyState() {
@@ -50,12 +49,48 @@ function EmptyState() {
   );
 }
 
-export default function GroceryList({ store }) {
-  const { items, addItem, updateItem, toggleDone, cycleUrgency, deleteItem, archiveCurrentList } =
-    store;
-  const [archiveOpen, setArchiveOpen] = useState(false);
+export default function GroceryList({ store, showToast }) {
+  const {
+    items,
+    addItem,
+    updateItem,
+    toggleDone,
+    cycleUrgency,
+    deleteItem,
+    restoreItem,
+    archiveCurrentList,
+    undoArchive
+  } = store;
   const [doneOpen, setDoneOpen] = useState(false);
   const [logItemId, setLogItemId] = useState(null);
+
+  const handleDelete = async (item) => {
+    await deleteItem(item.id);
+    showToast?.({
+      message: `Deleted "${item.name}"`,
+      onUndo: () => restoreItem(item.id)
+    });
+  };
+
+  const handleToggle = async (id) => {
+    const result = await toggleDone(id);
+    if (result?.autoArchivedId) {
+      showToast?.({
+        message: 'List finished — archived to history',
+        onUndo: () => undoArchive(result.autoArchivedId)
+      });
+    }
+  };
+
+  const handleArchiveAll = async () => {
+    const id = await archiveCurrentList();
+    if (id) {
+      showToast?.({
+        message: 'Archived to history',
+        onUndo: () => undoArchive(id)
+      });
+    }
+  };
   const logItem = useMemo(
     () => items.find((i) => i.id === logItemId) || null,
     [items, logItemId]
@@ -122,9 +157,9 @@ export default function GroceryList({ store }) {
               <ItemRow
                 key={item.id}
                 item={item}
-                onToggle={() => toggleDone(item.id)}
+                onToggle={() => handleToggle(item.id)}
                 onCycleUrgency={() => cycleUrgency(item.id)}
-                onDelete={() => deleteItem(item.id)}
+                onDelete={() => handleDelete(item)}
                 onLog={() => setLogItemId(item.id)}
               />
             ))}
@@ -162,7 +197,7 @@ export default function GroceryList({ store }) {
               <div className="done-actions">
                 <button
                   className="btn btn-ghost btn-small"
-                  onClick={() => setArchiveOpen(true)}
+                  onClick={handleArchiveAll}
                 >
                   Archive all to history
                 </button>
@@ -178,17 +213,6 @@ export default function GroceryList({ store }) {
           setLogItemId(null);
         }}
         onCancel={() => setLogItemId(null)}
-      />
-      <Confirm
-        open={archiveOpen}
-        title="Archive this list?"
-        message="It will move to History and the current list will be cleared."
-        confirmLabel="Archive"
-        onConfirm={() => {
-          archiveCurrentList();
-          setArchiveOpen(false);
-        }}
-        onCancel={() => setArchiveOpen(false)}
       />
     </div>
   );

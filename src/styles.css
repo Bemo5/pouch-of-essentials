@@ -1605,6 +1605,57 @@ a:hover {
 }
 
 /* =====================================================================
+   Undo toast
+   ===================================================================== */
+
+.toast {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom));
+  max-width: calc(var(--app-max) - 24px);
+  margin: 0 auto;
+  background: var(--ink-0);
+  color: var(--bg);
+  padding: 12px 14px 12px 16px;
+  border-radius: 999px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 55;
+  animation: toast-in 0.32s var(--ease-out);
+  font-size: 14px;
+}
+
+.toast-message {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toast-action {
+  flex-shrink: 0;
+  background: transparent;
+  color: var(--accent);
+  border: 0;
+  font: inherit;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 12px;
+}
+
+.toast-action:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* =====================================================================
    Install toast
    ===================================================================== */
 
