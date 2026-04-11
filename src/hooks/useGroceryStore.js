@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   getDB,
   newId,
@@ -62,7 +62,6 @@ export function useGroceryStore(sync, profile) {
   const [rawItems, setRawItems] = useState([]);
   const [history, setHistory] = useState([]);
   const [ready, setReady] = useState(false);
-  const autoArchiveGuardRef = useRef(null);
 
   // Visible items filter out tombstones. rawItems is what we sync.
   const items = rawItems.filter((i) => !i.deleted);
@@ -137,12 +136,35 @@ export function useGroceryStore(sync, profile) {
   );
 
   const toggleDone = useCallback(
-    (id) => {
+    async (id) => {
       const cur = rawItems.find((i) => i.id === id);
       if (!cur) return;
-      return updateItem(id, { done: !cur.done });
+      const willBeDone = !cur.done;
+      await updateItem(id, { done: willBeDone });
+      // If the user just marked the last remaining active item done,
+      // auto-archive the whole list. We re-read from the DB to get the
+      // post-update snapshot rather than relying on React state.
+      if (!willBeDone) return;
+      const db = await getDB();
+      const all = await db.getAll(STORE_ITEMS);
+      const live = all.filter((i) => !i.deleted);
+      if (live.length === 0) return;
+      if (!live.every((i) => i.done)) return;
+      const entry = {
+        id: newId(),
+        items: live,
+        archivedAt: Date.now(),
+        auto: true
+      };
+      await db.put(STORE_HISTORY, entry);
+      const now = Date.now();
+      for (const i of live) {
+        await db.put(STORE_ITEMS, { ...i, deleted: true, updatedAt: now });
+      }
+      await refresh();
+      markDirty();
     },
-    [rawItems, updateItem]
+    [rawItems, updateItem, refresh, markDirty]
   );
 
   const toggleUrgent = useCallback(
@@ -201,33 +223,6 @@ export function useGroceryStore(sync, profile) {
     },
     [refresh, markDirty]
   );
-
-  // Auto-archive: when every *visible* item is done, archive them.
-  // Guard with a signature so we don't loop on the same state.
-  useEffect(() => {
-    if (!ready) return;
-    if (items.length === 0) return;
-    if (!items.every((i) => i.done)) return;
-    const signature = items.map((i) => i.id).sort().join(',');
-    if (autoArchiveGuardRef.current === signature) return;
-    autoArchiveGuardRef.current = signature;
-    (async () => {
-      const db = await getDB();
-      const entry = {
-        id: newId(),
-        items,
-        archivedAt: Date.now(),
-        auto: true
-      };
-      await db.put(STORE_HISTORY, entry);
-      const now = Date.now();
-      for (const i of items) {
-        await db.put(STORE_ITEMS, { ...i, deleted: true, updatedAt: now });
-      }
-      await refresh();
-      markDirty();
-    })();
-  }, [items, ready, refresh, markDirty]);
 
   return {
     ready,
