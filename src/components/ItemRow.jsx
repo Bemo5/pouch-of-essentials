@@ -1,4 +1,5 @@
 import { initialsOf } from '../utils/colors.js';
+import { formatPriceUnit } from '../utils/stores.js';
 
 function formatPrice(n) {
   if (n == null || !Number.isFinite(n)) return '';
@@ -38,7 +39,12 @@ export default function ItemRow({ item, onToggle, onToggleUrgent, onDelete, onLo
               </span>
             )}
             {item.price != null && (
-              <span className="item-price">{formatPrice(item.price)}</span>
+              <span className="item-price">
+                {formatPrice(item.price)}
+                {item.priceUnit && (
+                  <span className="item-price-unit">{formatPriceUnit(item.priceUnit)}</span>
+                )}
+              </span>
             )}
             {item.createdBy && (
               <span className="item-owner" title={ownerLabel}>

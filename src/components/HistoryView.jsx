@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import Confirm from './Confirm.jsx';
+import { formatPriceUnit } from '../utils/stores.js';
 
 function formatPrice(n) {
   if (n == null || !Number.isFinite(n)) return '';
@@ -108,6 +109,11 @@ export default function HistoryView({ store }) {
                               {item.price != null && (
                                 <span className="item-price">
                                   {formatPrice(item.price)}
+                                  {item.priceUnit && (
+                                    <span className="item-price-unit">
+                                      {formatPriceUnit(item.priceUnit)}
+                                    </span>
+                                  )}
                                 </span>
                               )}
                             </div>

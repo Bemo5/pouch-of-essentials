@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { STORES } from '../utils/stores.js';
 
 export default function AddItemForm({ onAdd }) {
   const [name, setName] = useState('');
@@ -81,8 +82,14 @@ export default function AddItemForm({ onAdd }) {
             value={store}
             onChange={(e) => setStore(e.target.value)}
             autoComplete="off"
+            list="store-suggestions"
             aria-label="Store"
           />
+          <datalist id="store-suggestions">
+            {STORES.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
         </div>
       )}
     </form>

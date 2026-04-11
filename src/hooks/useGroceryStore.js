@@ -103,7 +103,7 @@ export function useGroceryStore(sync, profile) {
   // --- Mutations ---
 
   const addItem = useCallback(
-    async ({ name, qty = '', urgent = false, store = '', price = '' }) => {
+    async ({ name, qty = '', urgent = false, store = '', price = '', priceUnit = '' }) => {
       const trimmed = (name || '').trim();
       if (!trimmed) return;
       const now = Date.now();
@@ -114,6 +114,7 @@ export function useGroceryStore(sync, profile) {
         qty: (qty || '').trim(),
         store: (store || '').trim(),
         price: Number.isFinite(priceNum) ? priceNum : null,
+        priceUnit: priceUnit || '',
         urgent: !!urgent,
         done: false,
         deleted: false,
