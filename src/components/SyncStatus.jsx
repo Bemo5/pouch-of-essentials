@@ -1,3 +1,5 @@
+import { initialsOf } from '../utils/colors.js';
+
 function timeAgo(ts) {
   if (!ts) return 'never';
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -10,7 +12,7 @@ function timeAgo(ts) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-export default function SyncStatus({ sync, onOpenSettings }) {
+export default function SyncStatus({ sync, profile, onOpenSettings }) {
   let dotClass = 'off';
   let label = 'Offline';
 
@@ -34,6 +36,8 @@ export default function SyncStatus({ sync, onOpenSettings }) {
       }${sync.lastError ? `\n${sync.lastError}` : ''}`
     : 'Tap to set up shared sync';
 
+  const hasProfile = !!profile?.name;
+
   return (
     <button
       className="sync-chip"
@@ -41,6 +45,15 @@ export default function SyncStatus({ sync, onOpenSettings }) {
       title={title}
       aria-label={title}
     >
+      {hasProfile && (
+        <span
+          className="avatar avatar-sm"
+          style={{ background: profile.color }}
+          aria-hidden="true"
+        >
+          {initialsOf(profile.name)}
+        </span>
+      )}
       <span className={`sync-dot ${dotClass}`} />
       <span className="sync-label">{label}</span>
     </button>

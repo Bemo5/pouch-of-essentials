@@ -58,7 +58,7 @@ async function applyRemoteState(remote) {
   await tx.done;
 }
 
-export function useGroceryStore(sync) {
+export function useGroceryStore(sync, profile) {
   const [rawItems, setRawItems] = useState([]);
   const [history, setHistory] = useState([]);
   const [ready, setReady] = useState(false);
@@ -111,14 +111,16 @@ export function useGroceryStore(sync) {
         done: false,
         deleted: false,
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
+        createdBy: profile?.name || null,
+        createdByColor: profile?.color || null
       };
       const db = await getDB();
       await db.put(STORE_ITEMS, item);
       await refresh();
       markDirty();
     },
-    [refresh, markDirty]
+    [refresh, markDirty, profile]
   );
 
   const updateItem = useCallback(

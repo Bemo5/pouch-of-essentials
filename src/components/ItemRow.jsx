@@ -1,4 +1,7 @@
+import { initialsOf } from '../utils/colors.js';
+
 export default function ItemRow({ item, onToggle, onToggleUrgent, onDelete }) {
+  const ownerLabel = item.createdBy ? `added by ${item.createdBy}` : '';
   return (
     <li
       className={`item ${item.done ? 'is-done' : ''} ${item.urgent ? 'is-urgent' : ''}`}
@@ -16,10 +19,27 @@ export default function ItemRow({ item, onToggle, onToggleUrgent, onDelete }) {
         <span className="item-name" dir="auto">
           {item.name}
         </span>
-        {item.qty && (
-          <span className="item-qty" dir="auto">
-            {item.qty}
-          </span>
+        {(item.qty || item.createdBy) && (
+          <div className="item-meta">
+            {item.qty && (
+              <span className="item-qty" dir="auto">
+                {item.qty}
+              </span>
+            )}
+            {item.createdBy && (
+              <span className="item-owner" title={ownerLabel}>
+                <span
+                  className="avatar avatar-xs"
+                  style={{ background: item.createdByColor || '#888' }}
+                >
+                  {initialsOf(item.createdBy)}
+                </span>
+                <span className="item-owner-name" dir="auto">
+                  {item.createdBy}
+                </span>
+              </span>
+            )}
+          </div>
         )}
       </div>
       <div className="row-actions">

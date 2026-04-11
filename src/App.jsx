@@ -5,10 +5,12 @@ import SyncStatus from './components/SyncStatus.jsx';
 import Settings, { readSetupFromHash } from './components/Settings.jsx';
 import { useGroceryStore } from './hooks/useGroceryStore.js';
 import { useSync } from './hooks/useSync.js';
+import { useProfile } from './hooks/useProfile.js';
 
 export default function App() {
+  const profileHook = useProfile();
   const sync = useSync();
-  const store = useGroceryStore(sync);
+  const store = useGroceryStore(sync, profileHook.profile);
   const [tab, setTab] = useState('list');
   const [installEvent, setInstallEvent] = useState(null);
   const [showInstall, setShowInstall] = useState(false);
@@ -25,7 +27,7 @@ export default function App() {
   // has a ?setup= deeplink from a family member sharing their pouch.
   useEffect(() => {
     const fromHash = readSetupFromHash();
-    if (!sync.configured || fromHash) {
+    if (!profileHook.configured || !sync.configured || fromHash) {
       setSettingsOpen(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -67,7 +69,7 @@ export default function App() {
   };
 
   const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const firstRun = !sync.configured;
+  const firstRun = !profileHook.configured || !sync.configured;
 
   return (
     <div className="app">
@@ -79,7 +81,11 @@ export default function App() {
             <p>Shared family grocery list</p>
           </div>
         </div>
-        <SyncStatus sync={sync} onOpenSettings={() => setSettingsOpen(true)} />
+        <SyncStatus
+          sync={sync}
+          profile={profileHook.profile}
+          onOpenSettings={() => setSettingsOpen(true)}
+        />
       </header>
 
       <main className="app-main">
@@ -142,6 +148,7 @@ export default function App() {
 
       <Settings
         sync={sync}
+        profileHook={profileHook}
         open={settingsOpen}
         firstRun={firstRun}
         onClose={() => setSettingsOpen(false)}

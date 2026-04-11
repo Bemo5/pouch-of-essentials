@@ -1,16 +1,12 @@
 import { useEffect, useState } from 'react';
 import { gistCreate, verifyToken } from '../hooks/useSync.js';
+import { PALETTE, initialsOf, randomColor } from '../utils/colors.js';
 
-// Onboarding + settings.
-//
-// First-run is a two-screen flow:
-//   1. Welcome — explains the one-time setup in friendly terms, with a big
-//      "Sign in with GitHub" primary action.
-//   2. Connect — opens GitHub token create page in a new tab, shows a single
-//      paste field with a "Paste from clipboard" helper.
-//
-// Once configured, the same component turns into an iOS-style settings
-// sheet: device name, share link, disconnect.
+// Modal flow:
+//   profile  — "What's your name?" + color picker. Always first on fresh install.
+//   join     — Setup link detected, tap "Join pouch" to connect.
+//   connect  — Owner first-run, Sign in with GitHub + paste token.
+//   settings — Configured; iOS-style settings view.
 
 function b64urlEncode(obj) {
   const json = JSON.stringify(obj);
@@ -48,67 +44,100 @@ export function clearSetupHash() {
 const TOKEN_URL =
   'https://github.com/settings/tokens/new?scopes=gist&description=Pouch%20of%20Essentials';
 
-// ----- Welcome / intro ------------------------------------------------
+// ----- Profile step ---------------------------------------------------
 
-function Welcome({ onNext, isJoining }) {
+function ProfileStep({ profileHook, onNext, firstRun }) {
+  const { profile, setProfile } = profileHook;
+  const [name, setName] = useState(profile?.name || '');
+  const [color, setColor] = useState(profile?.color || randomColor());
+
+  const submit = (e) => {
+    e?.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setProfile({ name: trimmed, color });
+    onNext?.();
+  };
+
+  return (
+    <form className="profile-step" onSubmit={submit}>
+      <div className="profile-preview">
+        <div
+          className="avatar avatar-xl"
+          style={{ background: color }}
+          aria-hidden="true"
+        >
+          {initialsOf(name || '?')}
+        </div>
+        <div className="color-swatches">
+          {PALETTE.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={`swatch ${c === color ? 'selected' : ''}`}
+              style={{ background: c }}
+              onClick={() => setColor(c)}
+              aria-label={`Pick color ${c}`}
+            />
+          ))}
+        </div>
+      </div>
+      <input
+        className="input input-big"
+        placeholder="Your name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        autoFocus={firstRun}
+        maxLength={24}
+        dir="auto"
+        enterKeyHint="done"
+      />
+      <p className="muted small" style={{ textAlign: 'center', marginTop: -6 }}>
+        Family sees this on every item you add.
+      </p>
+    </form>
+  );
+}
+
+// ----- Join step -------------------------------------------------------
+
+function JoinStep({ profile, busy, error, userInfo }) {
   return (
     <div className="welcome">
-      <div className="welcome-hero">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M5 8 Q12 4 19 8 L20 18 Q20 20 18 20 L6 20 Q4 20 4 18 Z" />
-          <path d="M8 8 Q8 4 12 4 Q16 4 16 8" />
-        </svg>
+      <div
+        className="avatar avatar-xl"
+        style={{ background: profile?.color || '#d2691e', margin: '0 auto 20px' }}
+      >
+        {initialsOf(profile?.name || '?')}
       </div>
-      <h2 className="welcome-title">
-        {isJoining ? "You're invited" : 'Welcome to Pouch'}
-      </h2>
+      <h2 className="welcome-title">Ready to join, {profile?.name}</h2>
       <p className="welcome-sub">
-        {isJoining
-          ? 'Your family shared their pouch with you. One tap and you\'re in.'
-          : 'A shared grocery list for your family. Works offline, syncs across every phone, nothing to pay for — ever.'}
+        Tap below to connect to your family's shared pouch. Takes about a second.
       </p>
-
-      {!isJoining && (
-        <div className="welcome-features">
-          <div className="welcome-feature">
-            <div className="welcome-feature-icon">∞</div>
-            <div className="welcome-feature-text">
-              <strong>Free forever</strong>
-              <span>No subscriptions, no accounts to maintain, no service to disappear.</span>
-            </div>
-          </div>
-          <div className="welcome-feature">
-            <div className="welcome-feature-icon">↯</div>
-            <div className="welcome-feature-text">
-              <strong>Synced everywhere</strong>
-              <span>iPhone, Samsung, tablet, laptop — every device shows the same pouch.</span>
-            </div>
-          </div>
-          <div className="welcome-feature">
-            <div className="welcome-feature-icon">⌁</div>
-            <div className="welcome-feature-text">
-              <strong>Works offline</strong>
-              <span>Write in the supermarket basement — it syncs when you're back up.</span>
-            </div>
-          </div>
+      {busy && (
+        <div className="muted small" style={{ marginTop: 18 }}>
+          Connecting…
+        </div>
+      )}
+      {error && (
+        <div className="error-box" style={{ textAlign: 'start' }}>
+          <span>⚠</span>
+          <div>{error}</div>
+        </div>
+      )}
+      {userInfo && (
+        <div className="success-box" style={{ textAlign: 'start' }}>
+          <span>✓</span>
+          <div>You're in!</div>
         </div>
       )}
     </div>
   );
 }
 
-// ----- Connect (token) -------------------------------------------------
+// ----- Connect step (owner only) --------------------------------------
 
-function ConnectScreen({
-  token,
-  setToken,
-  gistId,
-  setGistId,
-  busy,
-  error,
-  userInfo,
-  isJoining
-}) {
+function ConnectStep({ token, setToken, error, userInfo }) {
   const [clipboardSupported] = useState(
     () => typeof navigator !== 'undefined' && !!navigator.clipboard?.readText
   );
@@ -117,46 +146,8 @@ function ConnectScreen({
     try {
       const text = await navigator.clipboard.readText();
       if (text?.trim()) setToken(text.trim());
-    } catch {
-      // Safari often rejects; user can paste manually.
-    }
+    } catch {}
   };
-
-  if (isJoining) {
-    return (
-      <div className="stack">
-        <p className="muted" style={{ fontSize: 14, lineHeight: 1.5 }}>
-          Your family's setup link is pre-filled. Tap <b>Join pouch</b> below to connect.
-        </p>
-        <div className="settings-group">
-          <div className="settings-row">
-            <div className="settings-row-label">Status</div>
-            <div className="settings-row-value">
-              {token ? 'Token received' : 'Waiting…'}
-            </div>
-          </div>
-          <div className="settings-row">
-            <div className="settings-row-label">Gist</div>
-            <div className="settings-row-value">
-              {gistId ? gistId.slice(0, 8) + '…' : 'Waiting…'}
-            </div>
-          </div>
-        </div>
-        {error && (
-          <div className="error-box">
-            <span>⚠</span>
-            <div>{error}</div>
-          </div>
-        )}
-        {userInfo && (
-          <div className="success-box">
-            <span>✓</span>
-            <div>Connected as {userInfo.login}</div>
-          </div>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className="connect-steps">
@@ -165,7 +156,8 @@ function ConnectScreen({
         <div className="connect-step-body">
           <strong>Sign in with GitHub</strong>
           <div className="muted">
-            Tap the button, generate the token, then come back. Takes about 30 seconds.
+            One-time, 30 seconds. Your family won't ever see this screen — they just tap
+            your invite link.
           </div>
           <a
             className="btn btn-github btn-small"
@@ -173,7 +165,7 @@ function ConnectScreen({
             target="_blank"
             rel="noreferrer"
           >
-            <span style={{ fontSize: 15 }}>↗</span> Sign in with GitHub
+            <span style={{ fontSize: 15 }}>↗</span> Open GitHub token page
           </a>
         </div>
       </div>
@@ -182,9 +174,7 @@ function ConnectScreen({
         <div className="connect-step-num">2</div>
         <div className="connect-step-body">
           <strong>Paste the token</strong>
-          <div className="muted">
-            Long-press the field to paste, or tap the button below.
-          </div>
+          <div className="muted">Long-press to paste, or tap the button.</div>
           <div className="input-row">
             <input
               className="input input-mono"
@@ -208,18 +198,6 @@ function ConnectScreen({
         </div>
       </div>
 
-      {gistId && (
-        <div className="connect-step done">
-          <div className="connect-step-num">3</div>
-          <div className="connect-step-body">
-            <strong>Pouch ID</strong>
-            <div className="muted" style={{ fontFamily: 'SF Mono, Menlo, monospace', fontSize: 12 }}>
-              {gistId}
-            </div>
-          </div>
-        </div>
-      )}
-
       {error && (
         <div className="error-box">
           <span>⚠</span>
@@ -238,33 +216,37 @@ function ConnectScreen({
 
 // ----- Configured settings view ---------------------------------------
 
-function ConfiguredSettings({ sync, copied, onCopyShare, onDisconnect }) {
+function SettingsView({ sync, profileHook, copied, onCopyShare, onEditProfile, onDisconnect }) {
+  const { profile } = profileHook;
   return (
     <>
-      <div className="settings-group-title">Device</div>
+      <div className="settings-group-title">You</div>
       <div className="settings-group">
-        <div className="settings-row">
-          <div className="settings-row-label">Name</div>
-          <input
-            className="input"
-            type="text"
-            value={sync.deviceName}
-            onChange={(e) => sync.setDeviceName(e.target.value)}
-            maxLength={24}
-            dir="auto"
-          />
-        </div>
+        <button className="settings-row settings-row-button" onClick={onEditProfile}>
+          <div
+            className="avatar avatar-md"
+            style={{ background: profile?.color || '#d2691e' }}
+          >
+            {initialsOf(profile?.name || '?')}
+          </div>
+          <div className="settings-row-label">{profile?.name || 'Set your name'}</div>
+          <span className="chev">›</span>
+        </button>
       </div>
 
       <div className="settings-group-title">Family</div>
       <div className="settings-group">
-        <button className="settings-action" onClick={onCopyShare} style={{ color: 'var(--brand)' }}>
+        <button
+          className="settings-action"
+          style={{ color: 'var(--brand)' }}
+          onClick={onCopyShare}
+        >
           {copied ? '✓ Copied — text it to your family' : 'Copy family invite link'}
         </button>
       </div>
       <p className="muted" style={{ fontSize: 12, padding: '0 4px 20px', lineHeight: 1.4 }}>
-        The link lets your family join with one tap. Only share it with people you trust — it
-        contains the token that lets them read and write the pouch.
+        The link contains your access token, so only share with people you trust — they
+        can read and edit the pouch.
       </p>
 
       <div className="settings-group-title">Pouch</div>
@@ -292,42 +274,61 @@ function ConfiguredSettings({ sync, copied, onCopyShare, onDisconnect }) {
 
 // ----- Main component --------------------------------------------------
 
-export default function Settings({ sync, open, onClose, firstRun }) {
+export default function Settings({ sync, profileHook, open, onClose, firstRun }) {
   const [token, setToken] = useState(sync.token || '');
   const [gistId, setGistId] = useState(sync.gistId || '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
   const [copied, setCopied] = useState(false);
-  const [step, setStep] = useState('welcome'); // welcome | connect
-  const [isJoining, setIsJoining] = useState(false);
+  const [step, setStep] = useState('profile');
+  const [hasSetupHash, setHasSetupHash] = useState(false);
 
+  // Reset state + determine initial step whenever the modal opens.
   useEffect(() => {
     if (!open) return;
-    setToken(sync.token || '');
-    setGistId(sync.gistId || '');
     setError(null);
     setUserInfo(null);
     setCopied(false);
 
-    // If the URL has a setup deeplink, auto-fill and jump to connect.
     const fromHash = readSetupFromHash();
-    if (fromHash?.token || fromHash?.gistId) {
+    const hasSetup = !!(fromHash?.token || fromHash?.gistId);
+    setHasSetupHash(hasSetup);
+    if (hasSetup) {
       if (fromHash.token) setToken(fromHash.token);
       if (fromHash.gistId) setGistId(fromHash.gistId);
-      setIsJoining(true);
-      setStep('connect');
-    } else if (firstRun) {
-      setStep('welcome');
     } else {
-      setStep('configured');
+      setToken(sync.token || '');
+      setGistId(sync.gistId || '');
+    }
+
+    if (!profileHook.configured) {
+      setStep('profile');
+    } else if (hasSetup && !sync.configured) {
+      setStep('join');
+    } else if (!sync.configured) {
+      setStep('connect');
+    } else {
+      setStep('settings');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, firstRun]);
+  }, [open]);
 
   if (!open) return null;
 
-  const connect = async () => {
+  // Called after profile is entered — moves to the correct next step.
+  const onProfileNext = () => {
+    if (hasSetupHash && !sync.configured) {
+      setStep('join');
+    } else if (!sync.configured) {
+      setStep('connect');
+    } else {
+      // Editing profile from settings → go back to settings.
+      setStep('settings');
+    }
+  };
+
+  const runConnect = async () => {
     if (!token.trim()) {
       setError('Paste the token first.');
       return;
@@ -343,7 +344,7 @@ export default function Settings({ sync, open, onClose, firstRun }) {
           items: [],
           history: [],
           updatedAt: Date.now(),
-          editor: sync.deviceName
+          editor: profileHook.profile?.name || 'Pouch'
         });
         finalGistId = created.id;
         setGistId(finalGistId);
@@ -351,16 +352,13 @@ export default function Settings({ sync, open, onClose, firstRun }) {
       sync.updateConfig({ token: token.trim(), gistId: finalGistId });
       clearSetupHash();
       setBusy(false);
-      // Small delay so the success state is visible
-      setTimeout(() => {
-        onClose();
-      }, 700);
+      setTimeout(() => onClose(), 700);
     } catch (e) {
       setBusy(false);
       setError(
-        e.message?.includes('401')
+        String(e.message || e).includes('401')
           ? "That token didn't work. Did you copy all of it?"
-          : e.message || String(e)
+          : String(e.message || e)
       );
     }
   };
@@ -392,82 +390,101 @@ export default function Settings({ sync, open, onClose, firstRun }) {
 
   // ----- render ------------------------------------------------------
 
-  const configured = sync.configured;
   const title =
-    step === 'welcome'
-      ? ''
+    step === 'profile'
+      ? firstRun || !profileHook.configured
+        ? 'Who are you?'
+        : 'Edit profile'
+      : step === 'join'
+      ? 'Join family pouch'
       : step === 'connect'
-      ? isJoining
-        ? 'Join family pouch'
-        : 'Connect'
+      ? 'Connect'
       : 'Settings';
 
+  const canClose = !firstRun && profileHook.configured;
+
   return (
-    <div className="modal-backdrop" onClick={firstRun ? undefined : onClose}>
+    <div className="modal-backdrop" onClick={canClose ? onClose : undefined}>
       <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog">
         <div className="modal-handle" />
 
-        {title && (
-          <div className="modal-head">
-            <h2>{title}</h2>
-            {!firstRun && (
-              <button className="modal-close" onClick={onClose} aria-label="Close">
-                ×
-              </button>
-            )}
-          </div>
-        )}
+        <div className="modal-head">
+          <h2>{title}</h2>
+          {canClose && (
+            <button className="modal-close" onClick={onClose} aria-label="Close">
+              ×
+            </button>
+          )}
+        </div>
 
         <div className="modal-body">
-          {step === 'welcome' && (
-            <Welcome onNext={() => setStep('connect')} isJoining={isJoining} />
+          {step === 'profile' && (
+            <ProfileStep
+              profileHook={profileHook}
+              onNext={onProfileNext}
+              firstRun={firstRun}
+            />
           )}
-          {step === 'connect' && (
-            <ConnectScreen
-              token={token}
-              setToken={setToken}
-              gistId={gistId}
-              setGistId={setGistId}
+          {step === 'join' && (
+            <JoinStep
+              profile={profileHook.profile}
               busy={busy}
               error={error}
               userInfo={userInfo}
-              isJoining={isJoining}
             />
           )}
-          {step === 'configured' && configured && (
-            <ConfiguredSettings
+          {step === 'connect' && (
+            <ConnectStep
+              token={token}
+              setToken={setToken}
+              error={error}
+              userInfo={userInfo}
+            />
+          )}
+          {step === 'settings' && sync.configured && (
+            <SettingsView
               sync={sync}
+              profileHook={profileHook}
               copied={copied}
               onCopyShare={copyShareLink}
+              onEditProfile={() => setStep('profile')}
               onDisconnect={disconnect}
             />
           )}
         </div>
 
         <div className="modal-foot">
-          {step === 'welcome' && (
-            <button className="btn btn-primary btn-fill" onClick={() => setStep('connect')}>
-              {isJoining ? 'Continue' : 'Get started'}
+          {step === 'profile' && (
+            <button
+              className="btn btn-primary btn-fill"
+              onClick={onProfileNext}
+              disabled={!profileHook.profile?.name?.trim()}
+            >
+              Continue
+            </button>
+          )}
+          {step === 'join' && (
+            <button
+              className="btn btn-primary btn-fill"
+              onClick={runConnect}
+              disabled={busy || !token.trim()}
+            >
+              {busy ? 'Joining…' : `Join as ${profileHook.profile?.name}`}
             </button>
           )}
           {step === 'connect' && (
             <>
-              {!firstRun && !isJoining && (
-                <button className="btn btn-ghost" onClick={() => setStep('configured')}>
-                  Back
-                </button>
-              )}
               <div className="grow" />
               <button
                 className="btn btn-primary"
-                onClick={connect}
+                onClick={runConnect}
                 disabled={!token.trim() || busy}
               >
-                {busy ? 'Connecting…' : isJoining ? 'Join pouch' : 'Connect'}
+                {busy ? 'Connecting…' : 'Connect'}
               </button>
             </>
           )}
-          {step === 'configured' && (
+          {step === 'settings' && (
             <button className="btn btn-primary btn-fill" onClick={onClose}>
               Done
             </button>
