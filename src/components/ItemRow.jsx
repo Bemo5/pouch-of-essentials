@@ -6,13 +6,23 @@ function formatPrice(n) {
   return n % 1 === 0 ? String(n) : n.toFixed(2);
 }
 
-export default function ItemRow({ item, onToggle, onToggleUrgent, onDelete, onLog }) {
-  const ownerLabel = item.createdBy ? `added by ${item.createdBy}` : '';
-  const hasMeta = item.qty || item.store || item.price != null || item.createdBy;
+const URGENCY_LABELS = {
+  0: 'Mark urgent',
+  1: 'Urgent — tap for super urgent',
+  2: 'Super urgent — tap to clear'
+};
+
+export default function ItemRow({ item, onToggle, onCycleUrgency, onDelete, onLog }) {
+  const urgency = Number(item.urgency) || (item.urgent ? 1 : 0);
+  const urgencyClass =
+    urgency === 2 ? 'is-super-urgent' : urgency === 1 ? 'is-urgent' : '';
+  const btnClass =
+    urgency === 2 ? 'super-urgent' : urgency === 1 ? 'on' : '';
+  const ownerLabel = item.createdBy ? `Added by ${item.createdBy}` : '';
+  const hasMeta = item.qty || item.store || item.price != null;
+
   return (
-    <li
-      className={`item ${item.done ? 'is-done' : ''} ${item.urgent ? 'is-urgent' : ''}`}
-    >
+    <li className={`item ${item.done ? 'is-done' : ''} ${urgencyClass}`}>
       <button
         className="check"
         onClick={onToggle}
@@ -34,7 +44,7 @@ export default function ItemRow({ item, onToggle, onToggleUrgent, onDelete, onLo
               </span>
             )}
             {item.store && (
-              <span className="item-store" dir="auto" title={`From ${item.store}`}>
+              <span className="item-store" dir="auto">
                 {item.store}
               </span>
             )}
@@ -46,22 +56,19 @@ export default function ItemRow({ item, onToggle, onToggleUrgent, onDelete, onLo
                 )}
               </span>
             )}
-            {item.createdBy && (
-              <span className="item-owner" title={ownerLabel}>
-                <span
-                  className="avatar avatar-xs"
-                  style={{ background: item.createdByColor || '#888' }}
-                >
-                  {initialsOf(item.createdBy)}
-                </span>
-                <span className="item-owner-name" dir="auto">
-                  {item.createdBy}
-                </span>
-              </span>
-            )}
           </div>
         )}
       </div>
+      {item.createdBy && (
+        <span
+          className="item-owner-dot"
+          style={{ background: item.createdByColor || '#888' }}
+          title={ownerLabel}
+          aria-label={ownerLabel}
+        >
+          {initialsOf(item.createdBy)}
+        </span>
+      )}
       <div className="row-actions">
         {item.done && onLog && (
           <button
@@ -75,10 +82,10 @@ export default function ItemRow({ item, onToggle, onToggleUrgent, onDelete, onLo
         )}
         {!item.done && (
           <button
-            className={`icon-btn ${item.urgent ? 'on' : ''}`}
-            onClick={onToggleUrgent}
-            aria-label="Toggle urgent"
-            title="Urgent"
+            className={`icon-btn ${btnClass}`}
+            onClick={onCycleUrgency}
+            aria-label={URGENCY_LABELS[urgency]}
+            title={URGENCY_LABELS[urgency]}
           >
             !
           </button>

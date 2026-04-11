@@ -51,20 +51,23 @@ function EmptyState() {
 }
 
 export default function GroceryList({ store }) {
-  const { items, addItem, updateItem, toggleDone, toggleUrgent, deleteItem, archiveCurrentList } =
+  const { items, addItem, updateItem, toggleDone, cycleUrgency, deleteItem, archiveCurrentList } =
     store;
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [doneOpen, setDoneOpen] = useState(false);
   const [logItemId, setLogItemId] = useState(null);
   const logItem = useMemo(
     () => items.find((i) => i.id === logItemId) || null,
     [items, logItemId]
   );
 
-  const { active, done, urgentCount } = useMemo(() => {
+  const { active, done, urgentCount, superUrgentCount } = useMemo(() => {
     const live = items.filter((i) => !i.done);
-    // Urgent first, newest last inside each group
+    // Super urgent first, then urgent, then newest last inside each group.
+    const level = (i) => Number(i.urgency) || (i.urgent ? 1 : 0);
     live.sort((a, b) => {
-      if (!!b.urgent - !!a.urgent) return !!b.urgent - !!a.urgent;
+      const d = level(b) - level(a);
+      if (d) return d;
       return a.createdAt - b.createdAt;
     });
     const done = items
@@ -73,7 +76,8 @@ export default function GroceryList({ store }) {
     return {
       active: live,
       done,
-      urgentCount: live.filter((i) => i.urgent).length
+      urgentCount: live.filter((i) => level(i) >= 1).length,
+      superUrgentCount: live.filter((i) => level(i) === 2).length
     };
   }, [items]);
 
@@ -92,7 +96,12 @@ export default function GroceryList({ store }) {
         </div>
         {urgentCount > 0 && (
           <div className="hero-sub">
-            <b>{urgentCount} urgent</b>
+            {superUrgentCount > 0 && (
+              <b className="hero-super">{superUrgentCount} super urgent</b>
+            )}
+            {urgentCount - superUrgentCount > 0 && (
+              <b>{urgentCount - superUrgentCount} urgent</b>
+            )}
           </div>
         )}
       </div>
@@ -114,7 +123,7 @@ export default function GroceryList({ store }) {
                 key={item.id}
                 item={item}
                 onToggle={() => toggleDone(item.id)}
-                onToggleUrgent={() => toggleUrgent(item.id)}
+                onCycleUrgency={() => cycleUrgency(item.id)}
                 onDelete={() => deleteItem(item.id)}
                 onLog={() => setLogItemId(item.id)}
               />
@@ -124,35 +133,43 @@ export default function GroceryList({ store }) {
       )}
 
       {done.length > 0 && (
-        <section className="section">
-          <header className="section-header">
-            <h2>Done</h2>
-            <span className="section-count">{done.length}</span>
-          </header>
-          <ul className="items">
-            {done.map((item) => (
-              <ItemRow
-                key={item.id}
-                item={item}
-                onToggle={() => toggleDone(item.id)}
-                onToggleUrgent={() => toggleUrgent(item.id)}
-                onDelete={() => deleteItem(item.id)}
-                onLog={() => setLogItemId(item.id)}
-              />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {hasAny && (
-        <div className="list-footer">
+        <section className={`section done-section ${doneOpen ? 'open' : ''}`}>
           <button
-            className="btn btn-ghost btn-small"
-            onClick={() => setArchiveOpen(true)}
+            className="done-toggle"
+            onClick={() => setDoneOpen((v) => !v)}
+            aria-expanded={doneOpen}
           >
-            Archive list
+            <span className="done-toggle-label">Done</span>
+            <span className="section-count">{done.length}</span>
+            <span className="done-toggle-chev" aria-hidden="true">
+              {doneOpen ? '▾' : '▸'}
+            </span>
           </button>
-        </div>
+          {doneOpen && (
+            <>
+              <ul className="items">
+                {done.map((item) => (
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    onToggle={() => toggleDone(item.id)}
+                    onCycleUrgency={() => cycleUrgency(item.id)}
+                    onDelete={() => deleteItem(item.id)}
+                    onLog={() => setLogItemId(item.id)}
+                  />
+                ))}
+              </ul>
+              <div className="done-actions">
+                <button
+                  className="btn btn-ghost btn-small"
+                  onClick={() => setArchiveOpen(true)}
+                >
+                  Archive all to history
+                </button>
+              </div>
+            </>
+          )}
+        </section>
       )}
       <LogPurchaseDialog
         item={logItem}

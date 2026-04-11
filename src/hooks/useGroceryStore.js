@@ -103,11 +103,12 @@ export function useGroceryStore(sync, profile) {
   // --- Mutations ---
 
   const addItem = useCallback(
-    async ({ name, qty = '', urgent = false, store = '', price = '', priceUnit = '' }) => {
+    async ({ name, qty = '', urgency = 0, store = '', price = '', priceUnit = '' }) => {
       const trimmed = (name || '').trim();
       if (!trimmed) return;
       const now = Date.now();
       const priceNum = String(price).trim() === '' ? null : Number(price);
+      const lvl = Math.max(0, Math.min(2, Number(urgency) || 0));
       const item = {
         id: newId(),
         name: trimmed,
@@ -115,7 +116,8 @@ export function useGroceryStore(sync, profile) {
         store: (store || '').trim(),
         price: Number.isFinite(priceNum) ? priceNum : null,
         priceUnit: priceUnit || '',
-        urgent: !!urgent,
+        urgency: lvl,
+        urgent: lvl > 0,
         done: false,
         deleted: false,
         createdAt: now,
@@ -177,11 +179,14 @@ export function useGroceryStore(sync, profile) {
     [rawItems, updateItem, refresh, markDirty]
   );
 
-  const toggleUrgent = useCallback(
+  // Cycle urgency: none → urgent → super urgent → none.
+  const cycleUrgency = useCallback(
     (id) => {
       const cur = rawItems.find((i) => i.id === id);
       if (!cur) return;
-      return updateItem(id, { urgent: !cur.urgent });
+      const prev = Number(cur.urgency) || (cur.urgent ? 1 : 0);
+      const next = (prev + 1) % 3;
+      return updateItem(id, { urgency: next, urgent: next > 0 });
     },
     [rawItems, updateItem]
   );
@@ -250,7 +255,7 @@ export function useGroceryStore(sync, profile) {
     addItem,
     updateItem,
     toggleDone,
-    toggleUrgent,
+    cycleUrgency,
     deleteItem,
     archiveCurrentList,
     deleteHistoryEntry,

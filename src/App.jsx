@@ -78,7 +78,7 @@ export default function App() {
           <span className="brand-mark" aria-hidden="true" />
           <div className="brand-text">
             <h1>Pouch of Essentials</h1>
-            <p>Shared family grocery list</p>
+            <p>Shared Family Grocery List</p>
           </div>
         </div>
         <SyncStatus

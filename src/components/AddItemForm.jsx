@@ -1,22 +1,32 @@
 import { useState } from 'react';
 import { STORES } from '../utils/stores.js';
 
+const URGENCY_LABELS = {
+  0: 'Normal · tap to mark urgent',
+  1: 'Urgent · tap again for super urgent',
+  2: 'Super urgent · tap to clear'
+};
+
 export default function AddItemForm({ onAdd }) {
   const [name, setName] = useState('');
   const [qty, setQty] = useState('');
-  const [urgent, setUrgent] = useState(false);
+  const [urgency, setUrgency] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [store, setStore] = useState('');
 
   const submit = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
-    await onAdd({ name, qty, urgent, store });
+    await onAdd({ name, qty, urgency, store });
     setName('');
     setQty('');
-    setUrgent(false);
+    setUrgency(0);
     setStore('');
+    setExpanded(false);
   };
+
+  const urgencyClass =
+    urgency === 2 ? 'super-urgent' : urgency === 1 ? 'on' : '';
 
   return (
     <form className={`composer ${expanded ? 'expanded' : ''}`} onSubmit={submit}>
@@ -33,23 +43,12 @@ export default function AddItemForm({ onAdd }) {
           enterKeyHint="done"
           aria-label="Item name"
         />
-        <input
-          className="composer-qty"
-          type="text"
-          dir="auto"
-          placeholder="qty"
-          value={qty}
-          onChange={(e) => setQty(e.target.value)}
-          autoComplete="off"
-          aria-label="Quantity"
-        />
         <button
           type="button"
-          className={`composer-urgent ${urgent ? 'on' : ''}`}
-          onClick={() => setUrgent((v) => !v)}
-          aria-pressed={urgent}
-          aria-label="Mark as urgent"
-          title="Urgent"
+          className={`composer-urgent ${urgencyClass}`}
+          onClick={() => setUrgency((v) => (v + 1) % 3)}
+          aria-label={URGENCY_LABELS[urgency]}
+          title={URGENCY_LABELS[urgency]}
         >
           !
         </button>
@@ -58,8 +57,8 @@ export default function AddItemForm({ onAdd }) {
           className={`composer-more ${expanded ? 'on' : ''}`}
           onClick={() => setExpanded((v) => !v)}
           aria-pressed={expanded}
-          aria-label="More details"
-          title="Store & price"
+          aria-label="Quantity and store"
+          title="Quantity & store"
         >
           ⋯
         </button>
@@ -74,6 +73,16 @@ export default function AddItemForm({ onAdd }) {
       </div>
       {expanded && (
         <div className="composer-extras">
+          <input
+            className="composer-qty-wide"
+            type="text"
+            dir="auto"
+            placeholder="Quantity (2, 500g, 1 box…)"
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+            autoComplete="off"
+            aria-label="Quantity"
+          />
           <input
             className="composer-store"
             type="text"
