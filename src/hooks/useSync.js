@@ -157,8 +157,10 @@ export function mergeStates(local, remote) {
 
 // --- The hook ---
 
-export function useSync() {
+export function useSync(profile) {
   const [config, setConfig] = useState(loadConfig);
+  const editorNameRef = useRef(null);
+  editorNameRef.current = profile?.name || null;
   const [status, setStatus] = useState('idle'); // 'idle' | 'ok' | 'syncing' | 'error' | 'unconfigured'
   const [lastSyncAt, setLastSyncAt] = useState(null);
   const [lastError, setLastError] = useState(null);
@@ -254,7 +256,7 @@ export function useSync() {
       const local = getLocalStateRef.current();
       const merged = mergeStates(local, remote);
       merged.updatedAt = Date.now();
-      merged.editor = deviceName;
+      merged.editor = editorNameRef.current || 'Pouch';
       await gistPatch(config.token, config.gistId, merged);
       // After a push, invalidate etag so the next poll re-reads (GitHub sometimes
       // caches ETags briefly after a PATCH).

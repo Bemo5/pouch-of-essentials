@@ -1,7 +1,13 @@
 import { initialsOf } from '../utils/colors.js';
 
+function formatPrice(n) {
+  if (n == null || !Number.isFinite(n)) return '';
+  return n % 1 === 0 ? String(n) : n.toFixed(2);
+}
+
 export default function ItemRow({ item, onToggle, onToggleUrgent, onDelete }) {
   const ownerLabel = item.createdBy ? `added by ${item.createdBy}` : '';
+  const hasMeta = item.qty || item.store || item.price != null || item.createdBy;
   return (
     <li
       className={`item ${item.done ? 'is-done' : ''} ${item.urgent ? 'is-urgent' : ''}`}
@@ -19,12 +25,20 @@ export default function ItemRow({ item, onToggle, onToggleUrgent, onDelete }) {
         <span className="item-name" dir="auto">
           {item.name}
         </span>
-        {(item.qty || item.createdBy) && (
+        {hasMeta && (
           <div className="item-meta">
             {item.qty && (
               <span className="item-qty" dir="auto">
                 {item.qty}
               </span>
+            )}
+            {item.store && (
+              <span className="item-store" dir="auto" title={`From ${item.store}`}>
+                {item.store}
+              </span>
+            )}
+            {item.price != null && (
+              <span className="item-price">{formatPrice(item.price)}</span>
             )}
             {item.createdBy && (
               <span className="item-owner" title={ownerLabel}>

@@ -1,4 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import Confirm from './Confirm.jsx';
+
+function formatPrice(n) {
+  if (n == null || !Number.isFinite(n)) return '';
+  return n % 1 === 0 ? String(n) : n.toFixed(2);
+}
 
 function formatDate(ts) {
   const d = new Date(ts);
@@ -14,6 +20,12 @@ function formatDate(ts) {
 export default function HistoryView({ store }) {
   const { history, deleteHistoryEntry } = store;
   const [openId, setOpenId] = useState(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
+
+  const pendingEntry = useMemo(
+    () => history.find((h) => h.id === pendingDeleteId) || null,
+    [history, pendingDeleteId]
+  );
 
   if (history.length === 0) {
     return (
@@ -81,10 +93,24 @@ export default function HistoryView({ store }) {
                           <span className="item-name" dir="auto">
                             {item.name}
                           </span>
-                          {item.qty && (
-                            <span className="item-qty" dir="auto">
-                              {item.qty}
-                            </span>
+                          {(item.qty || item.store || item.price != null) && (
+                            <div className="item-meta">
+                              {item.qty && (
+                                <span className="item-qty" dir="auto">
+                                  {item.qty}
+                                </span>
+                              )}
+                              {item.store && (
+                                <span className="item-store" dir="auto">
+                                  {item.store}
+                                </span>
+                              )}
+                              {item.price != null && (
+                                <span className="item-price">
+                                  {formatPrice(item.price)}
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
                       </li>
@@ -93,11 +119,7 @@ export default function HistoryView({ store }) {
                   <div className="history-actions">
                     <button
                       className="btn btn-ghost btn-small"
-                      onClick={() => {
-                        if (confirm('Delete this history entry?')) {
-                          deleteHistoryEntry(entry.id);
-                        }
-                      }}
+                      onClick={() => setPendingDeleteId(entry.id)}
                     >
                       Delete
                     </button>
@@ -108,6 +130,24 @@ export default function HistoryView({ store }) {
           );
         })}
       </ul>
+      <Confirm
+        open={!!pendingEntry}
+        title="Delete this entry?"
+        message={
+          pendingEntry
+            ? `${pendingEntry.items.length} item${
+                pendingEntry.items.length === 1 ? '' : 's'
+              } from ${formatDate(pendingEntry.archivedAt)}`
+            : ''
+        }
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => {
+          deleteHistoryEntry(pendingDeleteId);
+          setPendingDeleteId(null);
+        }}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </div>
   );
 }

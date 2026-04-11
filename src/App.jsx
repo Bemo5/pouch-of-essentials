@@ -9,7 +9,7 @@ import { useProfile } from './hooks/useProfile.js';
 
 export default function App() {
   const profileHook = useProfile();
-  const sync = useSync();
+  const sync = useSync(profileHook.profile);
   const store = useGroceryStore(sync, profileHook.profile);
   const [tab, setTab] = useState('list');
   const [installEvent, setInstallEvent] = useState(null);

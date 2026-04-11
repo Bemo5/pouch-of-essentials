@@ -376,11 +376,86 @@ a:hover {
   padding: 6px 6px 6px 14px;
   box-shadow: var(--shadow-sm);
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
   margin-bottom: 22px;
   transition: border-color 0.2s, box-shadow 0.2s;
   position: relative;
+}
+
+.composer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.composer-more {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--r-sm);
+  display: grid;
+  place-items: center;
+  color: var(--ink-3);
+  font-size: 20px;
+  line-height: 0;
+  background: transparent;
+  transition: all 0.15s;
+}
+
+.composer-more:hover {
+  background: var(--bg-2);
+  color: var(--ink-1);
+}
+
+.composer-more.on {
+  background: var(--bg-2);
+  color: var(--brand);
+}
+
+.composer-extras {
+  display: flex;
+  gap: 8px;
+  padding: 6px 4px 8px 2px;
+  border-top: 1px dashed var(--line);
+  margin-top: 2px;
+}
+
+.composer-store {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: var(--bg-2);
+  border-radius: var(--r-sm);
+  outline: none;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-1);
+  transition: background 0.15s;
+}
+
+.composer-store::placeholder,
+.composer-price::placeholder {
+  color: var(--ink-4);
+}
+
+.composer-store:focus,
+.composer-price:focus {
+  background: var(--brand-soft);
+}
+
+.composer-price {
+  width: 90px;
+  border: none;
+  background: var(--bg-2);
+  border-radius: var(--r-sm);
+  outline: none;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-1);
+  text-align: center;
+  transition: background 0.15s;
 }
 
 .composer:focus-within {
@@ -1707,5 +1782,96 @@ a:hover {
 .settings-row-button:hover,
 .settings-row-button:active {
   background: var(--bg-2);
+}
+
+/* Item meta chips */
+
+.item-store {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-3);
+  background: var(--bg-2);
+  border-radius: var(--r-full);
+  padding: 2px 8px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-price {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: var(--r-full);
+  padding: 2px 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =====================================================================
+   Confirm pill
+   ===================================================================== */
+
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 14, 6, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 200;
+  animation: fade-in 0.18s var(--ease-out);
+}
+
+.confirm-pill {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 22px 22px 16px;
+  max-width: 320px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--line);
+  animation: pill-in 0.22s var(--ease-spring);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pill-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.confirm-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink-0);
+  margin-bottom: 6px;
+}
+
+.confirm-message {
+  font-size: 14px;
+  color: var(--ink-2);
+  line-height: 1.45;
+  margin-bottom: 18px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(194, 65, 12, 0.35);
+}
+
+.btn-danger:active {
+  transform: scale(0.96);
 }
 

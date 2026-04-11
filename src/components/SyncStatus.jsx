@@ -24,7 +24,10 @@ export default function SyncStatus({ sync, profile, onOpenSettings }) {
     label = 'Syncing…';
   } else if (sync.status === 'ok') {
     dotClass = 'ok';
-    label = sync.lastEditor && sync.lastEditor !== sync.deviceName ? sync.lastEditor : 'Synced';
+    label =
+      sync.lastEditor && sync.lastEditor !== profile?.name
+        ? sync.lastEditor
+        : 'Synced';
   } else if (sync.status === 'error') {
     dotClass = 'err';
     label = 'Error';

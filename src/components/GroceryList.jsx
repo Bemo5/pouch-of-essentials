@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import AddItemForm from './AddItemForm.jsx';
 import ItemRow from './ItemRow.jsx';
+import Confirm from './Confirm.jsx';
 
 function EmptyState() {
   return (
@@ -50,6 +51,7 @@ function EmptyState() {
 
 export default function GroceryList({ store }) {
   const { items, addItem, toggleDone, toggleUrgent, deleteItem, archiveCurrentList } = store;
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
   const { active, done, urgentCount } = useMemo(() => {
     const live = items.filter((i) => !i.done);
@@ -137,14 +139,23 @@ export default function GroceryList({ store }) {
         <div className="list-footer">
           <button
             className="btn btn-ghost btn-small"
-            onClick={() => {
-              if (confirm('Archive this list to history?')) archiveCurrentList();
-            }}
+            onClick={() => setArchiveOpen(true)}
           >
             Archive list
           </button>
         </div>
       )}
+      <Confirm
+        open={archiveOpen}
+        title="Archive this list?"
+        message="It will move to History and the current list will be cleared."
+        confirmLabel="Archive"
+        onConfirm={() => {
+          archiveCurrentList();
+          setArchiveOpen(false);
+        }}
+        onCancel={() => setArchiveOpen(false)}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { gistCreate, verifyToken } from '../hooks/useSync.js';
 import { PALETTE, initialsOf, randomColor } from '../utils/colors.js';
+import Confirm from './Confirm.jsx';
 
 // Modal flow:
 //   profile  — "What's your name?" + color picker. Always first on fresh install.
@@ -290,6 +291,7 @@ export default function Settings({ sync, profileHook, open, onClose, firstRun })
   const [copied, setCopied] = useState(false);
   const [step, setStep] = useState('profile');
   const [hasSetupHash, setHasSetupHash] = useState(false);
+  const [disconnectOpen, setDisconnectOpen] = useState(false);
 
   // Reset state + determine initial step whenever the modal opens.
   useEffect(() => {
@@ -370,13 +372,12 @@ export default function Settings({ sync, profileHook, open, onClose, firstRun })
     }
   };
 
-  const disconnect = () => {
-    if (
-      confirm('Disconnect this device from the shared pouch? Your local data stays on this phone.')
-    ) {
-      sync.clearConfig();
-      onClose();
-    }
+  const disconnect = () => setDisconnectOpen(true);
+
+  const confirmDisconnect = () => {
+    sync.clearConfig();
+    setDisconnectOpen(false);
+    onClose();
   };
 
   const shareUrl = () => {
@@ -498,6 +499,15 @@ export default function Settings({ sync, profileHook, open, onClose, firstRun })
           )}
         </div>
       </div>
+      <Confirm
+        open={disconnectOpen}
+        title="Disconnect this device?"
+        message="Your local data stays on this phone. You can rejoin anytime with the invite link."
+        confirmLabel="Disconnect"
+        danger
+        onConfirm={confirmDisconnect}
+        onCancel={() => setDisconnectOpen(false)}
+      />
     </div>
   );
 }
