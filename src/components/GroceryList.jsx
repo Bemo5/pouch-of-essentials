@@ -2,41 +2,105 @@ import { useMemo } from 'react';
 import AddItemForm from './AddItemForm.jsx';
 import ItemRow from './ItemRow.jsx';
 
+function EmptyState() {
+  return (
+    <div className="empty">
+      <svg
+        className="empty-illustration"
+        viewBox="0 0 120 120"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id="pouch-g" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#f3a360" />
+            <stop offset="1" stopColor="#b5551a" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M30 46 Q60 30 90 46 L96 96 Q96 102 90 102 L30 102 Q24 102 24 96 Z"
+          fill="url(#pouch-g)"
+          opacity="0.92"
+        />
+        <path
+          d="M42 46 Q42 26 60 26 Q78 26 78 46"
+          stroke="#8a3e10"
+          strokeWidth="5"
+          strokeLinecap="round"
+          fill="none"
+        />
+        <circle cx="60" cy="70" r="14" fill="#fbf7ef" opacity="0.85" />
+        <path
+          d="M54 70 L58 74 L67 63"
+          stroke="#d2691e"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        />
+      </svg>
+      <div className="empty-title">Your pouch is empty</div>
+      <div className="empty-sub">
+        Add milk, bread, خبز — anything you need.
+      </div>
+    </div>
+  );
+}
+
 export default function GroceryList({ store }) {
   const { items, addItem, toggleDone, toggleUrgent, deleteItem, archiveCurrentList } = store;
 
-  const { urgent, normal, done } = useMemo(() => {
-    const urgent = [];
-    const normal = [];
-    const done = [];
-    for (const i of items) {
-      if (i.done) done.push(i);
-      else if (i.urgent) urgent.push(i);
-      else normal.push(i);
-    }
-    const bySeen = (a, b) => a.createdAt - b.createdAt;
+  const { active, done, urgentCount } = useMemo(() => {
+    const live = items.filter((i) => !i.done);
+    // Urgent first, newest last inside each group
+    live.sort((a, b) => {
+      if (!!b.urgent - !!a.urgent) return !!b.urgent - !!a.urgent;
+      return a.createdAt - b.createdAt;
+    });
+    const done = items
+      .filter((i) => i.done)
+      .sort((a, b) => b.updatedAt - a.updatedAt);
     return {
-      urgent: urgent.sort(bySeen),
-      normal: normal.sort(bySeen),
-      done: done.sort((a, b) => b.updatedAt - a.updatedAt)
+      active: live,
+      done,
+      urgentCount: live.filter((i) => i.urgent).length
     };
   }, [items]);
 
+  const totalActive = active.length;
   const hasAny = items.length > 0;
 
   return (
     <div className="list-screen">
+      <div className="hero">
+        <div className="hero-title">
+          {totalActive === 0 && done.length === 0
+            ? 'Pouch'
+            : totalActive === 0
+            ? 'All done ✓'
+            : `${totalActive} ${totalActive === 1 ? 'item' : 'items'}`}
+        </div>
+        {urgentCount > 0 && (
+          <div className="hero-sub">
+            <b>{urgentCount} urgent</b>
+          </div>
+        )}
+      </div>
+
       <AddItemForm onAdd={addItem} />
 
-      {urgent.length > 0 && (
-        <section className="section section-urgent">
-          <header className="section-header">
-            <span className="section-dot urgent" />
-            <h2>Urgent</h2>
-            <span className="section-count">{urgent.length}</span>
+      {!hasAny && <EmptyState />}
+
+      {active.length > 0 && (
+        <section className="section">
+          <header className={`section-header ${urgentCount > 0 ? 'urgent' : ''}`}>
+            {urgentCount > 0 && <span className="section-flame">●</span>}
+            <h2>{urgentCount > 0 ? 'To get' : 'Shopping list'}</h2>
+            <span className="section-count">{active.length}</span>
           </header>
           <ul className="items">
-            {urgent.map((item) => (
+            {active.map((item) => (
               <ItemRow
                 key={item.id}
                 item={item}
@@ -49,36 +113,9 @@ export default function GroceryList({ store }) {
         </section>
       )}
 
-      <section className="section">
-        <header className="section-header">
-          <span className="section-dot" />
-          <h2>Shopping list</h2>
-          <span className="section-count">{normal.length}</span>
-        </header>
-        {normal.length === 0 && urgent.length === 0 && done.length === 0 && (
-          <div className="empty">
-            <div className="empty-emoji">🧺</div>
-            <p>Your pouch is empty.</p>
-            <p className="muted">Add milk, bread, or anything you need.</p>
-          </div>
-        )}
-        <ul className="items">
-          {normal.map((item) => (
-            <ItemRow
-              key={item.id}
-              item={item}
-              onToggle={() => toggleDone(item.id)}
-              onToggleUrgent={() => toggleUrgent(item.id)}
-              onDelete={() => deleteItem(item.id)}
-            />
-          ))}
-        </ul>
-      </section>
-
       {done.length > 0 && (
-        <section className="section section-done">
+        <section className="section">
           <header className="section-header">
-            <span className="section-dot done" />
             <h2>Done</h2>
             <span className="section-count">{done.length}</span>
           </header>
@@ -99,7 +136,7 @@ export default function GroceryList({ store }) {
       {hasAny && (
         <div className="list-footer">
           <button
-            className="btn btn-ghost"
+            className="btn btn-ghost btn-small"
             onClick={() => {
               if (confirm('Archive this list to history?')) archiveCurrentList();
             }}

@@ -13,6 +13,13 @@ export default function App() {
   const [installEvent, setInstallEvent] = useState(null);
   const [showInstall, setShowInstall] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // First-run: open settings automatically if not configured, or if the URL
   // has a ?setup= deeplink from a family member sharing their pouch.
@@ -64,9 +71,9 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
+      <header className={`app-header ${scrolled ? 'scrolled' : ''}`}>
         <div className="brand">
-          <span className="brand-mark" aria-hidden="true">◐</span>
+          <span className="brand-mark" aria-hidden="true" />
           <div className="brand-text">
             <h1>Pouch of Essentials</h1>
             <p>Shared family grocery list</p>
@@ -90,9 +97,9 @@ export default function App() {
           role="tab"
           aria-selected={tab === 'list'}
         >
-          <span className="tab-icon">🛒</span>
+          <span className="tab-icon" aria-hidden="true">◐</span>
           <span>List</span>
-          {store.items.length > 0 && (
+          {store.items.filter((i) => !i.done).length > 0 && (
             <span className="tab-badge">{store.items.filter((i) => !i.done).length}</span>
           )}
         </button>
@@ -102,7 +109,7 @@ export default function App() {
           role="tab"
           aria-selected={tab === 'history'}
         >
-          <span className="tab-icon">🗂️</span>
+          <span className="tab-icon" aria-hidden="true">⎓</span>
           <span>History</span>
           {store.history.length > 0 && <span className="tab-badge">{store.history.length}</span>}
         </button>

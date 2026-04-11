@@ -15,42 +15,47 @@ export default function AddItemForm({ onAdd }) {
   };
 
   return (
-    <form className="add-form" onSubmit={submit}>
-      <div className="add-row">
-        <input
-          className="input input-name"
-          type="text"
-          dir="auto"
-          placeholder="Add item… (e.g. milk, خبز)"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          autoComplete="off"
-          enterKeyHint="done"
-        />
-        <input
-          className="input input-qty"
-          type="text"
-          dir="auto"
-          placeholder="qty"
-          value={qty}
-          onChange={(e) => setQty(e.target.value)}
-          autoComplete="off"
-        />
-      </div>
-      <div className="add-row add-actions">
-        <label className={`urgent-toggle ${urgent ? 'on' : ''}`}>
-          <input
-            type="checkbox"
-            checked={urgent}
-            onChange={(e) => setUrgent(e.target.checked)}
-          />
-          <span className="urgent-dot" />
-          Urgent
-        </label>
-        <button type="submit" className="btn btn-primary" disabled={!name.trim()}>
-          Add
-        </button>
-      </div>
+    <form className="composer" onSubmit={submit}>
+      <span className="composer-icon" aria-hidden="true">+</span>
+      <input
+        className="composer-name"
+        type="text"
+        dir="auto"
+        placeholder="Add to pouch…"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        autoComplete="off"
+        enterKeyHint="done"
+        aria-label="Item name"
+      />
+      <input
+        className="composer-qty"
+        type="text"
+        dir="auto"
+        placeholder="qty"
+        value={qty}
+        onChange={(e) => setQty(e.target.value)}
+        autoComplete="off"
+        aria-label="Quantity"
+      />
+      <button
+        type="button"
+        className={`composer-urgent ${urgent ? 'on' : ''}`}
+        onClick={() => setUrgent((v) => !v)}
+        aria-pressed={urgent}
+        aria-label="Mark as urgent"
+        title="Urgent"
+      >
+        !
+      </button>
+      <button
+        type="submit"
+        className="composer-add"
+        disabled={!name.trim()}
+        aria-label="Add item"
+      >
+        →
+      </button>
     </form>
   );
 }
