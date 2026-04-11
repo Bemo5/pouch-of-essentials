@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   getDB,
   newId,
@@ -64,6 +64,11 @@ export function useGroceryStore(sync, profile) {
   const [rawItems, setRawItems] = useState([]);
   const [rawHistory, setRawHistory] = useState([]);
   const [ready, setReady] = useState(false);
+  // Guard against the auto-archive path firing twice for the same finished
+  // set (e.g. mobile click+touch double-fire, or a re-entry from a remote
+  // merge racing with the local mutation).
+  const autoArchiveLastRef = useRef(null);
+  const autoArchiveInFlightRef = useRef(false);
 
   // Visible items + history filter out tombstones. raw* is what we sync.
   const items = rawItems.filter((i) => !i.deleted);
@@ -161,20 +166,29 @@ export function useGroceryStore(sync, profile) {
       const live = all.filter((i) => !i.deleted);
       if (live.length === 0) return;
       if (!live.every((i) => i.done)) return;
-      const now = Date.now();
-      const entry = {
-        id: newId(),
-        items: live,
-        archivedAt: now,
-        updatedAt: now,
-        auto: true
-      };
-      await db.put(STORE_HISTORY, entry);
-      for (const i of live) {
-        await db.put(STORE_ITEMS, { ...i, deleted: true, updatedAt: now });
+      if (autoArchiveInFlightRef.current) return;
+      const signature = live.map((i) => i.id).sort().join('|');
+      if (autoArchiveLastRef.current === signature) return;
+      autoArchiveLastRef.current = signature;
+      autoArchiveInFlightRef.current = true;
+      try {
+        const now = Date.now();
+        const entry = {
+          id: newId(),
+          items: live,
+          archivedAt: now,
+          updatedAt: now,
+          auto: true
+        };
+        await db.put(STORE_HISTORY, entry);
+        for (const i of live) {
+          await db.put(STORE_ITEMS, { ...i, deleted: true, updatedAt: now });
+        }
+        await refresh();
+        markDirty();
+      } finally {
+        autoArchiveInFlightRef.current = false;
       }
-      await refresh();
-      markDirty();
     },
     [rawItems, updateItem, refresh, markDirty]
   );
