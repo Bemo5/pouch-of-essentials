@@ -36,21 +36,23 @@ async function applyRemoteState(remote) {
 
   // Merge items by id: keep whichever record has the higher updatedAt.
   const existingItems = await itemsStore.getAll();
-  const map = new Map(existingItems.map((i) => [i.id, i]));
+  const itemMap = new Map(existingItems.map((i) => [i.id, i]));
   for (const incoming of remote.items || []) {
     if (!incoming || !incoming.id) continue;
-    const cur = map.get(incoming.id);
+    const cur = itemMap.get(incoming.id);
     if (!cur || (incoming.updatedAt || 0) > (cur.updatedAt || 0)) {
       await itemsStore.put(incoming);
     }
   }
 
-  // Merge history by id (history entries are immutable once created).
+  // Merge history by id with LWW semantics so history deletions (which are
+  // soft-deletes with a bumped updatedAt) actually propagate to peers.
   const existingHist = await histStore.getAll();
-  const histIds = new Set(existingHist.map((h) => h.id));
+  const histMap = new Map(existingHist.map((h) => [h.id, h]));
   for (const h of remote.history || []) {
     if (!h || !h.id) continue;
-    if (!histIds.has(h.id)) {
+    const cur = histMap.get(h.id);
+    if (!cur || (h.updatedAt || 0) > (cur.updatedAt || 0)) {
       await histStore.put(h);
     }
   }
@@ -60,16 +62,19 @@ async function applyRemoteState(remote) {
 
 export function useGroceryStore(sync, profile) {
   const [rawItems, setRawItems] = useState([]);
-  const [history, setHistory] = useState([]);
+  const [rawHistory, setRawHistory] = useState([]);
   const [ready, setReady] = useState(false);
 
-  // Visible items filter out tombstones. rawItems is what we sync.
+  // Visible items + history filter out tombstones. raw* is what we sync.
   const items = rawItems.filter((i) => !i.deleted);
+  const history = rawHistory
+    .filter((h) => !h.deleted)
+    .sort((a, b) => b.archivedAt - a.archivedAt);
 
   const refresh = useCallback(async () => {
     const { items: all, history: allHistory } = await loadAllFromDb();
     setRawItems(all);
-    setHistory(allHistory.sort((a, b) => b.archivedAt - a.archivedAt));
+    setRawHistory(allHistory);
   }, []);
 
   useEffect(() => {
@@ -82,14 +87,14 @@ export function useGroceryStore(sync, profile) {
     sync.registerLocal(
       () => ({
         items: rawItems,
-        history
+        history: rawHistory
       }),
       async (state /*, meta */) => {
         await applyRemoteState(state);
         await refresh();
       }
     );
-  }, [sync, rawItems, history, refresh]);
+  }, [sync, rawItems, rawHistory, refresh]);
 
   const markDirty = useCallback(() => {
     if (sync?.markDirty) sync.markDirty();
@@ -153,14 +158,15 @@ export function useGroceryStore(sync, profile) {
       const live = all.filter((i) => !i.deleted);
       if (live.length === 0) return;
       if (!live.every((i) => i.done)) return;
+      const now = Date.now();
       const entry = {
         id: newId(),
         items: live,
-        archivedAt: Date.now(),
+        archivedAt: now,
+        updatedAt: now,
         auto: true
       };
       await db.put(STORE_HISTORY, entry);
-      const now = Date.now();
       for (const i of live) {
         await db.put(STORE_ITEMS, { ...i, deleted: true, updatedAt: now });
       }
@@ -200,14 +206,15 @@ export function useGroceryStore(sync, profile) {
       const all = await db.getAll(STORE_ITEMS);
       const live = all.filter((i) => !i.deleted);
       if (live.length === 0) return;
+      const now = Date.now();
       const entry = {
         id: newId(),
         items: live,
-        archivedAt: Date.now()
+        archivedAt: now,
+        updatedAt: now
       };
       await db.put(STORE_HISTORY, entry);
       // Tombstone every live item
-      const now = Date.now();
       for (const i of live) {
         await db.put(STORE_ITEMS, { ...i, deleted: true, updatedAt: now });
       }
@@ -219,8 +226,16 @@ export function useGroceryStore(sync, profile) {
 
   const deleteHistoryEntry = useCallback(
     async (id) => {
+      // Soft-delete so the removal propagates via LWW merge instead of
+      // being re-hydrated from a peer's stale copy.
       const db = await getDB();
-      await db.delete(STORE_HISTORY, id);
+      const cur = await db.get(STORE_HISTORY, id);
+      if (!cur) return;
+      await db.put(STORE_HISTORY, {
+        ...cur,
+        deleted: true,
+        updatedAt: Date.now()
+      });
       await refresh();
       markDirty();
     },

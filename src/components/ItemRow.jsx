@@ -5,7 +5,7 @@ function formatPrice(n) {
   return n % 1 === 0 ? String(n) : n.toFixed(2);
 }
 
-export default function ItemRow({ item, onToggle, onToggleUrgent, onDelete }) {
+export default function ItemRow({ item, onToggle, onToggleUrgent, onDelete, onLog }) {
   const ownerLabel = item.createdBy ? `added by ${item.createdBy}` : '';
   const hasMeta = item.qty || item.store || item.price != null || item.createdBy;
   return (
@@ -57,14 +57,26 @@ export default function ItemRow({ item, onToggle, onToggleUrgent, onDelete }) {
         )}
       </div>
       <div className="row-actions">
-        <button
-          className={`icon-btn ${item.urgent ? 'on' : ''}`}
-          onClick={onToggleUrgent}
-          aria-label="Toggle urgent"
-          title="Urgent"
-        >
-          !
-        </button>
+        {item.done && onLog && (
+          <button
+            className={`icon-btn log ${item.price != null ? 'has-price' : ''}`}
+            onClick={onLog}
+            aria-label="Log purchase"
+            title="Log where & price"
+          >
+            $
+          </button>
+        )}
+        {!item.done && (
+          <button
+            className={`icon-btn ${item.urgent ? 'on' : ''}`}
+            onClick={onToggleUrgent}
+            aria-label="Toggle urgent"
+            title="Urgent"
+          >
+            !
+          </button>
+        )}
         <button
           className="icon-btn delete"
           onClick={onDelete}

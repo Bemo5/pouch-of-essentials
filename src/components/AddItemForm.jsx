@@ -6,17 +6,15 @@ export default function AddItemForm({ onAdd }) {
   const [urgent, setUrgent] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [store, setStore] = useState('');
-  const [price, setPrice] = useState('');
 
   const submit = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
-    await onAdd({ name, qty, urgent, store, price });
+    await onAdd({ name, qty, urgent, store });
     setName('');
     setQty('');
     setUrgent(false);
     setStore('');
-    setPrice('');
   };
 
   return (
@@ -84,18 +82,6 @@ export default function AddItemForm({ onAdd }) {
             onChange={(e) => setStore(e.target.value)}
             autoComplete="off"
             aria-label="Store"
-          />
-          <input
-            className="composer-price"
-            type="number"
-            inputMode="decimal"
-            step="0.01"
-            min="0"
-            placeholder="Price"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            autoComplete="off"
-            aria-label="Price"
           />
         </div>
       )}

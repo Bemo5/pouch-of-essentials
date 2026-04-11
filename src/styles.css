@@ -1875,3 +1875,42 @@ a:hover {
   transform: scale(0.96);
 }
 
+/* Log purchase button + dialog */
+
+.icon-btn.log {
+  color: var(--brand);
+  font-weight: 800;
+}
+
+.icon-btn.log:hover {
+  background: var(--brand-soft);
+}
+
+.icon-btn.log.has-price {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.log-pill {
+  max-width: 360px;
+}
+
+.log-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.log-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+
+.log-field .input {
+  width: 100%;
+}
+
