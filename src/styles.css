@@ -350,9 +350,48 @@ a:hover {
 
 .hero {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   padding: 12px 4px 18px;
+}
+
+.hero-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hero-share {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.08s;
+  touch-action: manipulation;
+}
+
+.hero-share svg {
+  width: 18px;
+  height: 18px;
+}
+
+.hero-share:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.hero-share:active {
+  transform: scale(0.92);
 }
 
 .hero-title {

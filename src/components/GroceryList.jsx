@@ -92,6 +92,51 @@ export default function GroceryList({ store, showToast }) {
       });
     }
   };
+
+  // Build a plain-text version of the active list suitable for pasting into
+  // WhatsApp or any other chat. Keeps things terse: one line per item,
+  // urgency marker suffixed, qty/store in parens.
+  const buildShareText = (liveItems) => {
+    if (liveItems.length === 0) return '';
+    const level = (i) => Number(i.urgency) || (i.urgent ? 1 : 0);
+    const lines = liveItems.map((i) => {
+      const lvl = level(i);
+      const marker = lvl === 2 ? ' 🔥' : lvl === 1 ? ' ⚠️' : '';
+      const meta = [];
+      if (i.qty) meta.push(i.qty);
+      if (i.store) meta.push(i.store);
+      const metaStr = meta.length ? ` (${meta.join(' · ')})` : '';
+      return `• ${i.name}${metaStr}${marker}`;
+    });
+    return `🛒 Shopping list\n${lines.join('\n')}`;
+  };
+
+  const handleShare = async () => {
+    const text = buildShareText(active);
+    if (!text) {
+      showToast?.({ message: 'Nothing to share yet' });
+      return;
+    }
+    // Prefer the native share sheet on mobile (lets the user pick WhatsApp,
+    // Telegram, SMS, etc.); fall back to clipboard on desktop or anywhere
+    // the Share API isn't available.
+    if (navigator.share) {
+      try {
+        await navigator.share({ text });
+        return;
+      } catch (err) {
+        // User cancelled or share failed — fall through to clipboard so at
+        // least they walk away with something on the clipboard.
+        if (err?.name === 'AbortError') return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast?.({ message: 'List copied to clipboard' });
+    } catch {
+      showToast?.({ message: "Couldn't copy — try again" });
+    }
+  };
   const logItem = useMemo(
     () => items.find((i) => i.id === logItemId) || null,
     [items, logItemId]
@@ -123,22 +168,51 @@ export default function GroceryList({ store, showToast }) {
   return (
     <div className="list-screen">
       <div className="hero">
-        <div className="hero-title">
-          {totalActive === 0 && done.length === 0
-            ? 'Pouch'
-            : totalActive === 0
-            ? 'All done ✓'
-            : `${totalActive} ${totalActive === 1 ? 'item' : 'items'}`}
-        </div>
-        {urgentCount > 0 && (
-          <div className="hero-sub">
-            {superUrgentCount > 0 && (
-              <b className="hero-super">{superUrgentCount} super urgent</b>
-            )}
-            {urgentCount - superUrgentCount > 0 && (
-              <b>{urgentCount - superUrgentCount} urgent</b>
-            )}
+        <div className="hero-main">
+          <div className="hero-title">
+            {totalActive === 0 && done.length === 0
+              ? 'Pouch'
+              : totalActive === 0
+              ? 'All done ✓'
+              : `${totalActive} ${totalActive === 1 ? 'item' : 'items'}`}
           </div>
+          {urgentCount > 0 && (
+            <div className="hero-sub">
+              {superUrgentCount > 0 && (
+                <b className="hero-super">{superUrgentCount} super urgent</b>
+              )}
+              {urgentCount - superUrgentCount > 0 && (
+                <b>{urgentCount - superUrgentCount} urgent</b>
+              )}
+            </div>
+          )}
+        </div>
+        {active.length > 0 && (
+          <button
+            type="button"
+            className="hero-share"
+            onClick={handleShare}
+            aria-label="Share list"
+            title="Share list"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <path
+                d="M12 3v13M7 8l5-5 5 5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
         )}
       </div>
 
