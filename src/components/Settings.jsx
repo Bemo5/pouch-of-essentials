@@ -48,14 +48,21 @@ const TOKEN_URL =
 
 function ProfileStep({ profileHook, onNext, firstRun }) {
   const { profile, setProfile } = profileHook;
-  const [name, setName] = useState(profile?.name || '');
-  const [color, setColor] = useState(profile?.color || randomColor());
+  const name = profile?.name || '';
+  const color = profile?.color || randomColor();
+
+  // Make sure a color is always persisted, even before the user types.
+  useEffect(() => {
+    if (!profile?.color) setProfile({ color });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const setName = (v) => setProfile({ name: v });
+  const setColor = (c) => setProfile({ color: c });
 
   const submit = (e) => {
     e?.preventDefault();
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setProfile({ name: trimmed, color });
+    if (!name.trim()) return;
     onNext?.();
   };
 
