@@ -1605,6 +1605,84 @@ a:hover {
 }
 
 /* =====================================================================
+   Frequent items row
+   ===================================================================== */
+
+.recent-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 4px;
+  padding: 0 2px;
+}
+
+.recent-label {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.recent-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 2px 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.recent-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.recent-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  color: var(--ink-1);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 7px 14px 7px 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.08s;
+  touch-action: manipulation;
+  white-space: nowrap;
+}
+
+.recent-chip:hover {
+  background: var(--surface-hover, var(--surface));
+  border-color: var(--accent);
+}
+
+.recent-chip:active {
+  transform: scale(0.96);
+}
+
+.recent-chip-plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* =====================================================================
    Undo toast
    ===================================================================== */
 

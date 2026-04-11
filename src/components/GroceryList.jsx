@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import AddItemForm from './AddItemForm.jsx';
 import ItemRow from './ItemRow.jsx';
 import LogPurchaseDialog from './LogPurchaseDialog.jsx';
+import RecentItems from './RecentItems.jsx';
 
 function EmptyState() {
   return (
@@ -142,6 +143,9 @@ export default function GroceryList({ store, showToast }) {
       </div>
 
       <AddItemForm onAdd={addItem} />
+
+      {/* ── FREQUENT ITEMS ROW — comment out the next line to disable ── */}
+      <RecentItems history={store.history} items={items} onAdd={addItem} />
 
       {!hasAny && <EmptyState />}
 
