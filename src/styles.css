@@ -469,6 +469,36 @@ a:hover {
   flex-wrap: wrap;
 }
 
+.composer-price-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+}
+
+.composer-price {
+  flex: 1 1 100px;
+  min-width: 0;
+  border: none;
+  background: var(--bg-2);
+  border-radius: var(--r-sm);
+  outline: none;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-1);
+  transition: background 0.15s;
+}
+
+.composer-price::placeholder {
+  color: var(--ink-4);
+}
+
+.composer-price:focus {
+  background: var(--bg-3, var(--surface));
+}
+
 .composer-warn {
   display: flex;
   align-items: center;

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { STORES } from '../utils/stores.js';
+import { STORES, PRICE_UNITS } from '../utils/stores.js';
 import { normalizeName } from '../utils/normalizeName.js';
 
 const URGENCY_LABELS = {
@@ -14,6 +14,8 @@ export default function AddItemForm({ onAdd, items = [] }) {
   const [urgency, setUrgency] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [store, setStore] = useState('');
+  const [price, setPrice] = useState('');
+  const [priceUnit, setPriceUnit] = useState('');
 
   // Build a normalized lookup of names already on the active list so we can
   // warn the user before they create an accidental duplicate. Done items
@@ -29,11 +31,13 @@ export default function AddItemForm({ onAdd, items = [] }) {
   const submit = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
-    await onAdd({ name, qty, urgency, store });
+    await onAdd({ name, qty, urgency, store, price, priceUnit });
     setName('');
     setQty('');
     setUrgency(0);
     setStore('');
+    setPrice('');
+    setPriceUnit('');
     setExpanded(false);
   };
 
@@ -117,6 +121,33 @@ export default function AddItemForm({ onAdd, items = [] }) {
               <option key={s} value={s} />
             ))}
           </datalist>
+          <div className="composer-price-row">
+            <input
+              className="composer-price"
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0"
+              placeholder="Price"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              aria-label="Price"
+            />
+            <div className="unit-chips" role="radiogroup" aria-label="Price unit">
+              {PRICE_UNITS.map((u) => (
+                <button
+                  key={u.value || 'total'}
+                  type="button"
+                  role="radio"
+                  aria-checked={priceUnit === u.value}
+                  className={`unit-chip ${priceUnit === u.value ? 'on' : ''}`}
+                  onClick={() => setPriceUnit(u.value)}
+                >
+                  {u.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </form>
