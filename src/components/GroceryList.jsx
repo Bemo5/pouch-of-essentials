@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import AddItemForm from './AddItemForm.jsx';
 import ItemRow from './ItemRow.jsx';
 import LogPurchaseDialog from './LogPurchaseDialog.jsx';
+import EditItemDialog from './EditItemDialog.jsx';
 import RecentItems from './RecentItems.jsx';
 
 function EmptyState() {
@@ -64,6 +65,7 @@ export default function GroceryList({ store, showToast }) {
   } = store;
   const [doneOpen, setDoneOpen] = useState(false);
   const [logItemId, setLogItemId] = useState(null);
+  const [editItemId, setEditItemId] = useState(null);
 
   const handleDelete = async (item) => {
     await deleteItem(item.id);
@@ -141,6 +143,10 @@ export default function GroceryList({ store, showToast }) {
     () => items.find((i) => i.id === logItemId) || null,
     [items, logItemId]
   );
+  const editItem = useMemo(
+    () => items.find((i) => i.id === editItemId) || null,
+    [items, editItemId]
+  );
 
   const { active, done, urgentCount, superUrgentCount } = useMemo(() => {
     const live = items.filter((i) => !i.done);
@@ -216,7 +222,7 @@ export default function GroceryList({ store, showToast }) {
         )}
       </div>
 
-      <AddItemForm onAdd={addItem} />
+      <AddItemForm onAdd={addItem} items={active} />
 
       {/* ── FREQUENT ITEMS ROW — comment out the next line to disable ── */}
       <RecentItems history={store.history} items={items} onAdd={addItem} />
@@ -239,6 +245,7 @@ export default function GroceryList({ store, showToast }) {
                 onCycleUrgency={() => cycleUrgency(item.id)}
                 onDelete={() => handleDelete(item)}
                 onLog={() => setLogItemId(item.id)}
+                onEdit={() => setEditItemId(item.id)}
               />
             ))}
           </ul>
@@ -269,6 +276,7 @@ export default function GroceryList({ store, showToast }) {
                     onCycleUrgency={() => cycleUrgency(item.id)}
                     onDelete={() => deleteItem(item.id)}
                     onLog={() => setLogItemId(item.id)}
+                    onEdit={() => setEditItemId(item.id)}
                   />
                 ))}
               </ul>
@@ -291,6 +299,14 @@ export default function GroceryList({ store, showToast }) {
           setLogItemId(null);
         }}
         onCancel={() => setLogItemId(null)}
+      />
+      <EditItemDialog
+        item={editItem}
+        onSave={async (patch) => {
+          await updateItem(editItemId, patch);
+          setEditItemId(null);
+        }}
+        onCancel={() => setEditItemId(null)}
       />
     </div>
   );

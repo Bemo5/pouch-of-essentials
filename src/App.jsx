@@ -11,15 +11,15 @@ import { useProfile } from './hooks/useProfile.js';
 export default function App() {
   const profileHook = useProfile();
   const sync = useSync(profileHook.profile);
-  const store = useGroceryStore(sync, profileHook.profile);
+  const [toast, setToast] = useState(null);
+  // Showing a new toast replaces any in-flight one.
+  const showToast = (t) => setToast(t);
+  const store = useGroceryStore(sync, profileHook.profile, { showToast });
   const [tab, setTab] = useState('list');
   const [installEvent, setInstallEvent] = useState(null);
   const [showInstall, setShowInstall] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [toast, setToast] = useState(null);
-  // Showing a new toast replaces any in-flight one.
-  const showToast = (t) => setToast(t);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 4);

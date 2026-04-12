@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { normalizeName } from '../utils/normalizeName.js';
 
 // How many chips to show at most.
 const MAX_CHIPS = 6;
@@ -12,15 +13,11 @@ const LOOKBACK_ENTRIES = 20;
 const DECAY_PER_WEEK = 0.85;
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-function normalize(name) {
-  return (name || '').trim().toLowerCase();
-}
-
 // Compute the top frequent items from history, weighted by recency and
 // filtered against anything already on the active list.
 function computeRecent(history, activeItems) {
   if (!history || history.length === 0) return [];
-  const onList = new Set(activeItems.map((i) => normalize(i.name)));
+  const onList = new Set(activeItems.map((i) => normalizeName(i.name)));
   const now = Date.now();
   const scored = new Map(); // key -> { display, score, lastSeen }
 
@@ -30,7 +27,7 @@ function computeRecent(history, activeItems) {
     const weeksAgo = Math.max(0, (now - archivedAt) / WEEK_MS);
     const weight = Math.pow(DECAY_PER_WEEK, weeksAgo);
     for (const item of entry.items || []) {
-      const key = normalize(item.name);
+      const key = normalizeName(item.name);
       if (!key) continue;
       if (onList.has(key)) continue;
       const cur = scored.get(key);

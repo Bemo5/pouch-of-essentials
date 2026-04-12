@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { STORES } from '../utils/stores.js';
+import { normalizeName } from '../utils/normalizeName.js';
 
 const URGENCY_LABELS = {
   0: 'Normal · tap to mark urgent',
@@ -7,12 +8,23 @@ const URGENCY_LABELS = {
   2: 'Super urgent · tap to clear'
 };
 
-export default function AddItemForm({ onAdd }) {
+export default function AddItemForm({ onAdd, items = [] }) {
   const [name, setName] = useState('');
   const [qty, setQty] = useState('');
   const [urgency, setUrgency] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [store, setStore] = useState('');
+
+  // Build a normalized lookup of names already on the active list so we can
+  // warn the user before they create an accidental duplicate. Done items
+  // are not in `items` (caller passes the active list), which is what we
+  // want — re-adding something you bought yesterday is intentional.
+  const existingKeys = useMemo(
+    () => new Set(items.map((i) => normalizeName(i.name))),
+    [items]
+  );
+  const isDuplicate =
+    name.trim() !== '' && existingKeys.has(normalizeName(name));
 
   const submit = async (e) => {
     e.preventDefault();
@@ -71,6 +83,12 @@ export default function AddItemForm({ onAdd }) {
           →
         </button>
       </div>
+      {isDuplicate && (
+        <div className="composer-warn" role="status">
+          <span className="composer-warn-icon" aria-hidden="true">!</span>
+          <span>Already on the list — add anyway?</span>
+        </div>
+      )}
       {expanded && (
         <div className="composer-extras">
           <input

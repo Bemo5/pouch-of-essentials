@@ -12,7 +12,7 @@ const URGENCY_LABELS = {
   2: 'Super urgent — tap to clear'
 };
 
-export default function ItemRow({ item, onToggle, onCycleUrgency, onDelete, onLog }) {
+export default function ItemRow({ item, onToggle, onCycleUrgency, onDelete, onLog, onEdit }) {
   const urgency = Number(item.urgency) || (item.urgent ? 1 : 0);
   const urgencyClass =
     urgency === 2 ? 'is-super-urgent' : urgency === 1 ? 'is-urgent' : '';
@@ -70,6 +70,16 @@ export default function ItemRow({ item, onToggle, onCycleUrgency, onDelete, onLo
         </span>
       )}
       <div className="row-actions">
+        {onEdit && (
+          <button
+            className="icon-btn edit"
+            onClick={onEdit}
+            aria-label="Edit item"
+            title="Edit"
+          >
+            ✎
+          </button>
+        )}
         {item.done && onLog && (
           <button
             className={`icon-btn log ${item.price != null ? 'has-price' : ''}`}

@@ -60,7 +60,7 @@ async function applyRemoteState(remote) {
   await tx.done;
 }
 
-export function useGroceryStore(sync, profile) {
+export function useGroceryStore(sync, profile, { showToast } = {}) {
   const [rawItems, setRawItems] = useState([]);
   const [rawHistory, setRawHistory] = useState([]);
   const [ready, setReady] = useState(false);
@@ -87,6 +87,9 @@ export function useGroceryStore(sync, profile) {
   }, [refresh]);
 
   // Hook up sync: provide the local state snapshot, and handle remote updates.
+  // On a true remote pull, compare the IDs we knew about before the merge
+  // against the IDs we know about after, and surface a toast for any new
+  // items that were added by someone other than this device's profile.
   useEffect(() => {
     if (!sync || !sync.registerLocal) return;
     sync.registerLocal(
@@ -94,12 +97,41 @@ export function useGroceryStore(sync, profile) {
         items: rawItems,
         history: rawHistory
       }),
-      async (state /*, meta */) => {
+      async (state, meta) => {
+        const beforeIds = new Set(
+          rawItems.filter((i) => !i.deleted).map((i) => i.id)
+        );
         await applyRemoteState(state);
-        await refresh();
+        const fresh = await loadAllFromDb();
+        setRawItems(fresh.items);
+        setRawHistory(fresh.history);
+
+        if (meta?.source === 'remote' && showToast) {
+          const myName = profile?.name;
+          const newOnes = fresh.items.filter(
+            (i) =>
+              !i.deleted &&
+              !beforeIds.has(i.id) &&
+              i.createdBy &&
+              i.createdBy !== myName
+          );
+          if (newOnes.length === 1) {
+            const it = newOnes[0];
+            showToast({ message: `${it.createdBy} added “${it.name}”` });
+          } else if (newOnes.length > 1) {
+            const allSame = newOnes.every(
+              (i) => i.createdBy === newOnes[0].createdBy
+            );
+            showToast({
+              message: allSame
+                ? `${newOnes[0].createdBy} added ${newOnes.length} items`
+                : `${newOnes.length} new items added`
+            });
+          }
+        }
       }
     );
-  }, [sync, rawItems, rawHistory, refresh]);
+  }, [sync, rawItems, rawHistory, profile, showToast]);
 
   const markDirty = useCallback(() => {
     if (sync?.markDirty) sync.markDirty();

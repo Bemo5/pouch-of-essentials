@@ -469,6 +469,98 @@ a:hover {
   flex-wrap: wrap;
 }
 
+.composer-warn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 4px 0;
+  padding: 7px 12px;
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--ink-1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 500;
+  animation: composer-warn-in 0.18s var(--ease-out);
+}
+
+.composer-warn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+@keyframes composer-warn-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Edit dialog — three urgency pills sit in their own row inside .log-pill */
+.urgency-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.urgency-pill {
+  flex: 1 1 80px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  touch-action: manipulation;
+}
+
+.urgency-pill.on.level-0 {
+  background: var(--bg-2);
+  color: var(--ink-1);
+  border-color: var(--ink-3);
+}
+
+.urgency-pill.on.level-1 {
+  background: var(--urgent-soft, rgba(243, 163, 96, 0.2));
+  color: var(--urgent, #d2691e);
+  border-color: var(--urgent, #d2691e);
+}
+
+.urgency-pill.on.level-2 {
+  background: var(--super-urgent-soft, rgba(220, 38, 38, 0.18));
+  color: var(--super-urgent, #dc2626);
+  border-color: var(--super-urgent, #dc2626);
+}
+
+/* Edit icon button — subtle, blends with the row */
+.icon-btn.edit {
+  color: var(--ink-3);
+}
+
+.icon-btn.edit:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .composer-qty-wide {
   flex: 1 1 120px;
   min-width: 0;
