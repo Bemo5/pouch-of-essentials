@@ -4,6 +4,7 @@ import ItemRow from './ItemRow.jsx';
 import LogPurchaseDialog from './LogPurchaseDialog.jsx';
 import EditItemDialog from './EditItemDialog.jsx';
 import RecentItems from './RecentItems.jsx';
+import { translateForShare } from '../utils/translateItem.js';
 
 function EmptyState() {
   return (
@@ -103,11 +104,12 @@ export default function GroceryList({ store, showToast }) {
     const lines = liveItems.map((i) => {
       const lvl = level(i);
       const marker = lvl === 2 ? ' 🔥' : lvl === 1 ? ' ⚠️' : '';
+      const translated = translateForShare(i.name, isAr);
       const meta = [];
       if (i.qty) meta.push(i.qty);
       if (i.store) meta.push(isAr ? `من ${i.store}` : i.store);
       const metaStr = meta.length ? ` (${meta.join(' · ')})` : '';
-      return `• ${i.name}${metaStr}${marker}`;
+      return `• ${translated}${metaStr}${marker}`;
     });
     const header = isAr ? '🛒 قائمة التسوق' : '🛒 Shopping list';
     return `${header}\n${lines.join('\n')}`;
@@ -313,17 +315,19 @@ export default function GroceryList({ store, showToast }) {
         onCancel={() => setEditItemId(null)}
       />
       {sharePicker && (
-        <div className="confirm-backdrop" onClick={() => setSharePicker(false)}>
-          <div className="confirm-pill share-picker" onClick={(e) => e.stopPropagation()}>
-            <div className="confirm-title">Share list as</div>
-            <div className="share-picker-btns">
-              <button className="btn btn-primary" onClick={() => doShare('en')}>
-                English
-              </button>
-              <button className="btn btn-primary" onClick={() => doShare('ar')}>
-                عربي
-              </button>
-            </div>
+        <div className="share-backdrop" onClick={() => setSharePicker(false)}>
+          <div className="share-sheet" onClick={(e) => e.stopPropagation()}>
+            <button className="share-option" onClick={() => doShare('en')}>
+              <span className="share-option-flag">🇬🇧</span>
+              <span>Share in English</span>
+            </button>
+            <button className="share-option" onClick={() => doShare('ar')}>
+              <span className="share-option-flag">🇪🇬</span>
+              <span>مشاركة بالعربي</span>
+            </button>
+            <button className="share-cancel" onClick={() => setSharePicker(false)}>
+              Cancel
+            </button>
           </div>
         </div>
       )}
