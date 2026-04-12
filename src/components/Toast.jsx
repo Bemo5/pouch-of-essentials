@@ -4,15 +4,23 @@ import { useEffect, useRef } from 'react';
 // responsible for cleaning up any state tied to the outgoing toast.
 export default function Toast({ toast, onClose }) {
   const timerRef = useRef(null);
+  // onClose is typically defined inline in the parent (`() => setToast(null)`),
+  // so its identity changes on every parent render. Stashing it in a ref
+  // keeps the timer effect from re-running and resetting the timer every
+  // time the parent re-renders (which happens often during sync polls).
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!toast) return;
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      onClose?.();
+      onCloseRef.current?.();
     }, toast.duration || 5000);
     return () => clearTimeout(timerRef.current);
-  }, [toast, onClose]);
+  }, [toast]);
 
   if (!toast) return null;
 
