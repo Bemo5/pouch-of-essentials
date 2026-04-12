@@ -66,6 +66,7 @@ export default function GroceryList({ store, showToast }) {
   const [doneOpen, setDoneOpen] = useState(false);
   const [logItemId, setLogItemId] = useState(null);
   const [editItemId, setEditItemId] = useState(null);
+  const [sharePicker, setSharePicker] = useState(false);
 
   const handleDelete = async (item) => {
     await deleteItem(item.id);
@@ -95,49 +96,52 @@ export default function GroceryList({ store, showToast }) {
     }
   };
 
-  // Build a plain-text version of the active list suitable for pasting into
-  // WhatsApp or any other chat. Keeps things terse: one line per item,
-  // urgency marker suffixed, qty/store in parens.
-  const buildShareText = (liveItems) => {
+  const buildShareText = (liveItems, lang = 'en') => {
     if (liveItems.length === 0) return '';
     const level = (i) => Number(i.urgency) || (i.urgent ? 1 : 0);
+    const isAr = lang === 'ar';
     const lines = liveItems.map((i) => {
       const lvl = level(i);
       const marker = lvl === 2 ? ' 🔥' : lvl === 1 ? ' ⚠️' : '';
       const meta = [];
       if (i.qty) meta.push(i.qty);
-      if (i.store) meta.push(i.store);
+      if (i.store) meta.push(isAr ? `من ${i.store}` : i.store);
       const metaStr = meta.length ? ` (${meta.join(' · ')})` : '';
       return `• ${i.name}${metaStr}${marker}`;
     });
-    return `🛒 Shopping list\n${lines.join('\n')}`;
+    const header = isAr ? '🛒 قائمة التسوق' : '🛒 Shopping list';
+    return `${header}\n${lines.join('\n')}`;
   };
 
-  const handleShare = async () => {
-    const text = buildShareText(active);
+  const doShare = async (lang) => {
+    setSharePicker(false);
+    const text = buildShareText(active, lang);
     if (!text) {
       showToast?.({ message: 'Nothing to share yet' });
       return;
     }
-    // Prefer the native share sheet on mobile (lets the user pick WhatsApp,
-    // Telegram, SMS, etc.); fall back to clipboard on desktop or anywhere
-    // the Share API isn't available.
     if (navigator.share) {
       try {
         await navigator.share({ text });
         return;
       } catch (err) {
-        // User cancelled or share failed — fall through to clipboard so at
-        // least they walk away with something on the clipboard.
         if (err?.name === 'AbortError') return;
       }
     }
     try {
       await navigator.clipboard.writeText(text);
-      showToast?.({ message: 'List copied to clipboard' });
+      showToast?.({ message: lang === 'ar' ? 'تم النسخ' : 'List copied to clipboard' });
     } catch {
-      showToast?.({ message: "Couldn't copy — try again" });
+      showToast?.({ message: lang === 'ar' ? 'حاول مرة ثانية' : "Couldn't copy — try again" });
     }
+  };
+
+  const handleShare = () => {
+    if (active.length === 0) {
+      showToast?.({ message: 'Nothing to share yet' });
+      return;
+    }
+    setSharePicker(true);
   };
   const logItem = useMemo(
     () => items.find((i) => i.id === logItemId) || null,
@@ -308,6 +312,21 @@ export default function GroceryList({ store, showToast }) {
         }}
         onCancel={() => setEditItemId(null)}
       />
+      {sharePicker && (
+        <div className="confirm-backdrop" onClick={() => setSharePicker(false)}>
+          <div className="confirm-pill share-picker" onClick={(e) => e.stopPropagation()}>
+            <div className="confirm-title">Share list as</div>
+            <div className="share-picker-btns">
+              <button className="btn btn-primary" onClick={() => doShare('en')}>
+                English
+              </button>
+              <button className="btn btn-primary" onClick={() => doShare('ar')}>
+                عربي
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
