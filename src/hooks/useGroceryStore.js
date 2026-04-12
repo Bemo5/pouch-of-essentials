@@ -90,6 +90,10 @@ export function useGroceryStore(sync, profile, { showToast } = {}) {
   // On a true remote pull, compare the IDs we knew about before the merge
   // against the IDs we know about after, and surface a toast for any new
   // items that were added by someone other than this device's profile.
+  // Skip toast on the very first remote pull — that's just the initial load,
+  // not someone adding items while we were away.
+  const firstSyncRef = useRef(true);
+
   useEffect(() => {
     if (!sync || !sync.registerLocal) return;
     sync.registerLocal(
@@ -105,6 +109,11 @@ export function useGroceryStore(sync, profile, { showToast } = {}) {
         const fresh = await loadAllFromDb();
         setRawItems(fresh.items);
         setRawHistory(fresh.history);
+
+        if (firstSyncRef.current && meta?.source === 'remote') {
+          firstSyncRef.current = false;
+          return;
+        }
 
         if (meta?.source === 'remote' && showToast) {
           const myName = profile?.name;
