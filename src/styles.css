@@ -2271,65 +2271,6 @@ a:hover {
   transform: scale(0.96);
 }
 
-/* Share language bottom sheet */
-.share-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(20, 14, 6, 0.4);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: 200;
-  animation: fade-in 0.15s ease-out;
-}
-.share-sheet {
-  width: 100%;
-  max-width: 400px;
-  padding: 8px 12px calc(env(safe-area-inset-bottom, 8px) + 8px);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  animation: sheet-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-@keyframes sheet-up {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
-}
-.share-option {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 16px 18px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--ink-0);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.12s;
-}
-.share-option:first-child { border-radius: var(--r-md) var(--r-md) var(--r-xs) var(--r-xs); }
-.share-option:nth-child(2) { border-radius: var(--r-xs) var(--r-xs) var(--r-md) var(--r-md); border-top: 0; }
-.share-option:active { background: var(--bg-2); }
-.share-option-flag { font-size: 22px; }
-.share-cancel {
-  width: 100%;
-  padding: 14px;
-  margin-top: 4px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ink-3);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.share-cancel:active { background: var(--bg-2); }
-
 /* Log purchase button + dialog */
 
 .icon-btn.log {

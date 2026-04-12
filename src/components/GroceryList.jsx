@@ -4,7 +4,6 @@ import ItemRow from './ItemRow.jsx';
 import LogPurchaseDialog from './LogPurchaseDialog.jsx';
 import EditItemDialog from './EditItemDialog.jsx';
 import RecentItems from './RecentItems.jsx';
-import { translateForShare } from '../utils/translateItem.js';
 
 function EmptyState() {
   return (
@@ -67,7 +66,6 @@ export default function GroceryList({ store, showToast }) {
   const [doneOpen, setDoneOpen] = useState(false);
   const [logItemId, setLogItemId] = useState(null);
   const [editItemId, setEditItemId] = useState(null);
-  const [sharePicker, setSharePicker] = useState(false);
 
   const handleDelete = async (item) => {
     await deleteItem(item.id);
@@ -97,27 +95,23 @@ export default function GroceryList({ store, showToast }) {
     }
   };
 
-  const buildShareText = (liveItems, lang = 'en') => {
+  const buildShareText = (liveItems) => {
     if (liveItems.length === 0) return '';
     const level = (i) => Number(i.urgency) || (i.urgent ? 1 : 0);
-    const isAr = lang === 'ar';
     const lines = liveItems.map((i) => {
       const lvl = level(i);
       const marker = lvl === 2 ? ' 🔥' : lvl === 1 ? ' ⚠️' : '';
-      const translated = translateForShare(i.name, isAr);
       const meta = [];
       if (i.qty) meta.push(i.qty);
-      if (i.store) meta.push(isAr ? `من ${i.store}` : i.store);
+      if (i.store) meta.push(i.store);
       const metaStr = meta.length ? ` (${meta.join(' · ')})` : '';
-      return `• ${translated}${metaStr}${marker}`;
+      return `• ${i.name}${metaStr}${marker}`;
     });
-    const header = isAr ? '🛒 قائمة التسوق' : '🛒 Shopping list';
-    return `${header}\n${lines.join('\n')}`;
+    return `🛒 Shopping list\n${lines.join('\n')}`;
   };
 
-  const doShare = async (lang) => {
-    setSharePicker(false);
-    const text = buildShareText(active, lang);
+  const handleShare = async () => {
+    const text = buildShareText(active);
     if (!text) {
       showToast?.({ message: 'Nothing to share yet' });
       return;
@@ -132,18 +126,10 @@ export default function GroceryList({ store, showToast }) {
     }
     try {
       await navigator.clipboard.writeText(text);
-      showToast?.({ message: lang === 'ar' ? 'تم النسخ' : 'List copied to clipboard' });
+      showToast?.({ message: 'List copied to clipboard' });
     } catch {
-      showToast?.({ message: lang === 'ar' ? 'حاول مرة ثانية' : "Couldn't copy — try again" });
+      showToast?.({ message: "Couldn't copy — try again" });
     }
-  };
-
-  const handleShare = () => {
-    if (active.length === 0) {
-      showToast?.({ message: 'Nothing to share yet' });
-      return;
-    }
-    setSharePicker(true);
   };
   const logItem = useMemo(
     () => items.find((i) => i.id === logItemId) || null,
@@ -314,23 +300,6 @@ export default function GroceryList({ store, showToast }) {
         }}
         onCancel={() => setEditItemId(null)}
       />
-      {sharePicker && (
-        <div className="share-backdrop" onClick={() => setSharePicker(false)}>
-          <div className="share-sheet" onClick={(e) => e.stopPropagation()}>
-            <button className="share-option" onClick={() => doShare('en')}>
-              <span className="share-option-flag">🇬🇧</span>
-              <span>Share in English</span>
-            </button>
-            <button className="share-option" onClick={() => doShare('ar')}>
-              <span className="share-option-flag">🇪🇬</span>
-              <span>مشاركة بالعربي</span>
-            </button>
-            <button className="share-cancel" onClick={() => setSharePicker(false)}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
