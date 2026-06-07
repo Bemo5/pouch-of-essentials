@@ -772,6 +772,40 @@ a:hover {
 }
 
 /* =====================================================================
+   Category dividers
+   ===================================================================== */
+
+.cat-group + .cat-group {
+  margin-top: 4px;
+}
+
+.cat-divider {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 4px 8px;
+  border-top: 1px solid var(--line);
+}
+
+.cat-divider.first {
+  padding-top: 4px;
+  border-top: none;
+}
+
+.cat-divider-emoji {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.cat-divider-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--ink-3);
+}
+
+/* =====================================================================
    Item rows
    ===================================================================== */
 

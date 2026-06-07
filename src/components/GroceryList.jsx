@@ -4,6 +4,7 @@ import ItemRow from './ItemRow.jsx';
 import LogPurchaseDialog from './LogPurchaseDialog.jsx';
 import EditItemDialog from './EditItemDialog.jsx';
 import RecentItems from './RecentItems.jsx';
+import { getCategory } from '../utils/categories.js';
 
 function EmptyState() {
   return (
@@ -140,9 +141,9 @@ export default function GroceryList({ store, showToast }) {
     [items, editItemId]
   );
 
-  const { active, done, urgentCount, superUrgentCount } = useMemo(() => {
+  const { active, done, urgentCount, superUrgentCount, categorizedActive } = useMemo(() => {
     const live = items.filter((i) => !i.done);
-    // Super urgent first, then urgent, then newest last inside each group.
+    // Super urgent first, then urgent, then oldest first inside each group.
     const level = (i) => Number(i.urgency) || (i.urgent ? 1 : 0);
     live.sort((a, b) => {
       const d = level(b) - level(a);
@@ -152,11 +153,21 @@ export default function GroceryList({ store, showToast }) {
     const done = items
       .filter((i) => i.done)
       .sort((a, b) => b.updatedAt - a.updatedAt);
+
+    // Group by category, preserving urgency-first sort within each group.
+    const map = new Map();
+    for (const item of live) {
+      const cat = getCategory(item.name);
+      if (!map.has(cat.id)) map.set(cat.id, { category: cat, items: [] });
+      map.get(cat.id).items.push(item);
+    }
+
     return {
       active: live,
       done,
       urgentCount: live.filter((i) => level(i) >= 1).length,
-      superUrgentCount: live.filter((i) => level(i) === 2).length
+      superUrgentCount: live.filter((i) => level(i) === 2).length,
+      categorizedActive: Array.from(map.values()),
     };
   }, [items]);
 
@@ -228,19 +239,29 @@ export default function GroceryList({ store, showToast }) {
             <h2>{urgentCount > 0 ? 'To get' : 'Shopping list'}</h2>
             <span className="section-count">{active.length}</span>
           </header>
-          <ul className="items">
-            {active.map((item) => (
-              <ItemRow
-                key={item.id}
-                item={item}
-                onToggle={() => handleToggle(item.id)}
-                onCycleUrgency={() => cycleUrgency(item.id)}
-                onDelete={() => handleDelete(item)}
-                onLog={() => setLogItemId(item.id)}
-                onEdit={() => setEditItemId(item.id)}
-              />
-            ))}
-          </ul>
+          {categorizedActive.map(({ category, items: catItems }, idx) => (
+            <div key={category.id} className="cat-group">
+              {categorizedActive.length > 1 && (
+                <div className={`cat-divider${idx === 0 ? ' first' : ''}`}>
+                  <span className="cat-divider-emoji" aria-hidden="true">{category.emoji}</span>
+                  <span className="cat-divider-label">{category.label}</span>
+                </div>
+              )}
+              <ul className="items">
+                {catItems.map((item) => (
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    onToggle={() => handleToggle(item.id)}
+                    onCycleUrgency={() => cycleUrgency(item.id)}
+                    onDelete={() => handleDelete(item)}
+                    onLog={() => setLogItemId(item.id)}
+                    onEdit={() => setEditItemId(item.id)}
+                  />
+                ))}
+              </ul>
+            </div>
+          ))}
         </section>
       )}
 
